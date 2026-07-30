@@ -19,3 +19,73 @@ Instead of manually downloading submissions and checking outputs, AutoJudge aims
 ---
 
 Current Progress : Scraped GCR using Google API for Classroom and Drive
+
+---
+
+## Planned Architecture
+
+```
+Google Classroom
+        │
+        ▼
+Submission Collector
+        │
+        ▼
+Organized Submissions
+        │
+        ▼
+Docker Sandbox
+        │
+        ▼
+Grading Engine
+        │
+        ▼
+Results Database
+        │
+        ▼
+Angular Dashboard
+```
+
+---
+
+## Tech Stack
+
+- Python
+- Google Classroom API
+- Google Drive API
+- Docker
+- Spring Boot
+- RabbitMQ
+- Kubernetes
+- Angular
+
+---
+
+## Folder Structure (Planned)
+
+```
+AutoJudge/
+│
+├── collector/
+├── grader/
+├── sandbox/
+├── backend/
+├── frontend/
+├── downloads/
+└── README.md
+```
+
+---
+
+## Future Features
+
+- Partial marking
+- Multiple programming language support
+- Parallel grading
+- Plagiarism detection
+- Export grades to CSV/Excel
+- Instructor dashboard
+- Kubernetes-based execution workers
+- Performance and resource monitoring
+
+---
