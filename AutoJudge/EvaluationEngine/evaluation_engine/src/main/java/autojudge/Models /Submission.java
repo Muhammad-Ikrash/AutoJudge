@@ -1,5 +1,9 @@
 package autojudge.Models ;
 
-public class Submission {
-    
+public record Submission {
+    public Path filePath;
+    public Path inputFilePath;
+    public Path expectedOutputPath;
+    public String StudentID;
+    public String AssignmentID;
 }
