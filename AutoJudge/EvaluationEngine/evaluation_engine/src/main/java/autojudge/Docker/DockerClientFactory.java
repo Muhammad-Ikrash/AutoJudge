@@ -3,7 +3,7 @@ package autojudge.Docker;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.core.DockerClientBuilder;
 
-final class DockerClientFactory {
+public final class DockerClientFactory {
 
     private static final DockerClient CLIENT =
             DockerClientBuilder.getInstance().build();
