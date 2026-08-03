@@ -1,0 +1,106 @@
+AutoJudge Evaluation Engine Grading Criteria and Weights Format
+===============================================================
+
+This file describes the current grading behavior implemented in the evaluation
+engine.
+
+Current Grading Criteria
+------------------------
+
+The grading logic lives in:
+
+- file: src/main/java/autojudge/grading/GradingService.java
+
+For each submission, the engine:
+
+1. Matches each ExecutionResult back to its TestCase by test case id.
+2. Resolves the final verdict for that test case.
+3. Counts how many test cases passed.
+4. Adds the weight of each passed test case to the earned weight.
+5. Sums the weight of all configured test cases to get the total weight.
+6. Calculates score as:
+
+   score = (earnedWeight * 100.0) / totalWeight
+
+If totalWeight is 0, the score is 0.0.
+
+Verdict resolution rules:
+
+- If the execution result already has a non-ACCEPTED verdict, that verdict is
+  kept.
+- If the execution result is ACCEPTED, the engine reads the expected output file
+  from disk and compares it with the student's output.
+- If normalized outputs match, the test is ACCEPTED.
+- If they do not match, the test is WRONG_ANSWER.
+- If the expected output file cannot be read, the test becomes INTERNAL_ERROR.
+
+Final submission verdict rules:
+
+- The engine tracks the worst verdict seen across all test cases.
+- Verdict severity is ordered as:
+  ACCEPTED < WRONG_ANSWER < RUNTIME_ERROR < TIME_LIMIT_EXCEEDED < MEMORY_LIMIT_EXCEEDED < COMPILATION_ERROR < INTERNAL_ERROR
+- If all results are ACCEPTED except that not all test cases passed, the final
+  verdict is downgraded to WRONG_ANSWER.
+- The final verdict is otherwise the worst verdict encountered.
+
+Output comparison rules:
+
+- Output comparison is handled by OutputComparator.
+- Line endings are normalized.
+- Trailing whitespace on each line is ignored.
+- Trailing whitespace at the end of the whole output is ignored.
+- null and empty output are treated as empty strings.
+
+Current Weights Format
+----------------------
+
+The weights file is read by:
+
+- file: src/main/java/autojudge/Main.java
+- method: loadWeights(Path weightsFile)
+
+The engine accepts two current formats.
+
+1. JSON-like key/value lines
+
+Example:
+
+"case1": 2
+"case2": 5
+
+The parser looks for patterns of the form:
+
+- "testCaseId" : integer
+
+It does not require a full JSON document, but it will pick up key/value pairs
+with quoted keys and integer values.
+
+2. Simple line-based format
+
+Example:
+
+case1: 2
+case2 = 5
+case3 10
+
+Behavior:
+
+- Blank lines are ignored.
+- Lines starting with # are ignored as comments.
+- Each non-empty line is split into a key and integer value.
+- Separators may include colon, equals, commas, or whitespace.
+
+Default behavior:
+
+- If a test case id is missing from the weights file, that test case gets weight 1.
+- If the weights file is missing entirely, all test cases default to weight 1.
+
+Important Notes
+---------------
+
+- Test case ids come from the input file stem, not the full filename.
+- The expected output file is matched by the same stem.
+- The current score is percentage-based and uses test weights, not a raw pass
+  count.
+- The current implementation prints SubmissionResult using the default Java
+  record toString() format.

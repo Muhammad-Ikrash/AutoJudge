@@ -1,0 +1,427 @@
+AutoJudge Evaluation Engine Current Workflow
+===========================================
+
+This document describes the current flow of data through the evaluation engine,
+starting from the command-line entry point and ending with the printed result.
+It reflects the code currently in the repository.
+
+1. Entry point: autojudge.Main
+--------------------------------
+
+The program starts in:
+
+- file: src/main/java/autojudge/Main.java
+- method: main(String[] args)
+
+Expected CLI arguments:
+
+- args[0] = submissionsRoot
+- args[1] = inputDirectory
+- args[2] = outputDirectory
+- args[3] = configFile
+- args[4] = weightsFile
+
+The program exits early with usage text if it does not receive exactly 5
+arguments.
+
+2. Assignment configuration loading
+-----------------------------------
+
+Main reads the assignment config from args[3] using:
+
+- file: src/main/java/autojudge/loader/AssignmentLoader.java
+- method: loadConfig(Path configPath)
+
+That loader builds an Assignment object containing:
+
+- assignmentId
+- resourceLimits
+- executionProfile
+
+The execution profile is later used to determine:
+
+- language
+- autoRemove
+- workingDirectory
+
+The resource limits are currently available in the model, but the runner does
+not yet enforce them in a real sandboxed Docker execution path.
+
+3. Language resolution
+----------------------
+
+After loading the Assignment, Main resolves the language by reading:
+
+- assignment.executionProfile().language()
+
+That value is normalized and mapped in:
+
+- file: src/main/java/autojudge/Main.java
+- method: resolveLanguage(String languageValue)
+
+Supported values:
+
+- cpp, c++, cxx, cc -> Language.CPP
+- java -> Language.JAVA
+- python, py, python3 -> Language.PYTHON
+
+Main then resolves the container image from that language in:
+
+- file: src/main/java/autojudge/Main.java
+- method: resolveImage(Language language)
+
+Current images:
+
+- CPP -> gcc:13
+- JAVA -> eclipse-temurin:21-jdk
+- PYTHON -> python:3.12-slim
+
+4. Test case loading
+--------------------
+
+Main builds the test case list from the input and output folders:
+
+- inputDirectory = args[1]
+- outputDirectory = args[2]
+
+The files are indexed by filename stem in:
+
+- file: src/main/java/autojudge/Main.java
+- method: loadTestCases(Path inputDirectory, Path outputDirectory, Map<String, Integer> weightsByTestCase)
+
+The helper flow is:
+
+- indexFilesByStem(inputDirectory)
+- indexFilesByStem(outputDirectory)
+- match each input stem to an expected output file
+- assign a weight from the weights map, defaulting to 1
+
+Each test case becomes a TestCase record with:
+
+- id = file stem
+- inputFile = input file path
+- expectedOutput = matching output file path if present, otherwise <stem>.out
+- weight = from weights file or 1
+
+5. Weight loading
+-----------------
+
+Main reads args[4] as the weights file using:
+
+- file: src/main/java/autojudge/Main.java
+- method: loadWeights(Path weightsFile)
+
+It supports two formats:
+
+- JSON-like key/value pairs, for example: "case1": 2
+- line-based fallback, for example: case1:2 or case1=2 or case1 2
+
+If the file is missing, the weight map is empty and all test cases default to
+weight 1.
+
+6. Submission folder discovery
+------------------------------
+
+Main finds submissions using:
+
+- file: src/main/java/autojudge/Main.java
+- method: listSubmissionFolders(Path submissionsRoot)
+
+Behavior:
+
+- If submissionsRoot does not exist, it returns an empty list.
+- If submissionsRoot is a directory, it lists its immediate child directories.
+- If that directory listing is empty, it treats submissionsRoot itself as a
+  single submission folder.
+
+This means the engine supports both:
+
+- a directory full of student folders
+- a single submission folder
+
+7. Submission loading
+---------------------
+
+Each submission folder is converted into a Submission record using:
+
+- file: src/main/java/autojudge/loader/SubmissionLoader.java
+- method: load(Path submissionFilePath, Path inputFilePath, Path expectedOutputFilePath, String studentId, String assignmentId)
+
+Main passes:
+
+- submissionFolder
+- inputDirectory
+- outputDirectory
+- studentId = folder name
+- assignment.assignmentId()
+
+The resulting Submission record currently contains:
+
+- filePath = the submission folder path
+- inputFilePath = shared input directory path
+- expectedOutputFilePath = shared output directory path
+- studentId = folder name
+- assignmentId = assignment config id
+
+8. Runner setup
+---------------
+
+Main creates the execution layer:
+
+- file: src/main/java/autojudge/docker/DockerRunner.java
+- class: DockerRunner
+
+and the grading layer:
+
+- file: src/main/java/autojudge/grading/GradingService.java
+- class: GradingService
+
+The current implementation is structured as if it is Docker-backed, but the
+runner currently executes submissions using local process execution logic.
+It still keeps the Docker-oriented names and container config objects in the
+API.
+
+9. Container config creation
+----------------------------
+
+Main creates a ContainerConfig from the assignment and resolved image:
+
+- file: src/main/java/autojudge/docker/ContainerConfig.java
+- method: from(Assignment assignment, String image)
+
+This config contains:
+
+- image
+- memoryLimitMb
+- cpuLimit
+- networkMode
+- workingDirectory
+- autoRemove
+
+These values come from the assignment execution profile and resource limits.
+
+10. Running a submission
+------------------------
+
+Main calls:
+
+- file: src/main/java/autojudge/Main.java
+- line of call: dockerRunner.runSubmission(containerConfig, submission, testCases)
+
+Inside DockerRunner:
+
+- file: src/main/java/autojudge/docker/DockerRunner.java
+- method: runSubmission(ContainerConfig containerConfig, Submission submission, List<TestCase> testCases)
+
+Current behavior:
+
+- It iterates over every TestCase.
+- For each test case, it calls runTestCase(...).
+- It returns a list of ExecutionResult objects, one per test case.
+
+11. Per-test execution
+----------------------
+
+The main per-test logic is in:
+
+- file: src/main/java/autojudge/docker/DockerRunner.java
+- method: runTestCase(ContainerConfig containerConfig, Submission submission, TestCase testCase)
+
+Current steps:
+
+1. Determine the language.
+   - First, it inspects the submission path file name extension.
+   - If that is inconclusive, it falls back to the container image name.
+
+2. Resolve the source directory.
+   - If submission.filePath() is a directory, that directory is used.
+   - Otherwise, the parent directory is used.
+
+3. Collect source files.
+   - It uses Compiler.collectSourceFiles(language, sourceDirectory).
+   - If no source files are found, the result is marked as COMPILATION_ERROR.
+
+4. Compile the source.
+   - It uses Compiler.compile(language, sourceDirectory, buildDirectory, outputName).
+   - If compilation fails, the compile output and error output are captured and
+     returned as a COMPILATION_ERROR result.
+
+5. Execute the compiled/interpreted program.
+   - It launches a local process through ProcessBuilder.
+   - The test input file is redirected into the program’s stdin.
+   - stdout and stderr are captured.
+
+6. Build an ExecutionResult.
+   - The runner records the test case id, verdict, stdout, stderr, exit code,
+     execution time, and memory usage.
+
+12. Compiler behavior
+---------------------
+
+Compilation is handled by:
+
+- file: src/main/java/autojudge/compiler/Compiler.java
+- class: Compiler
+
+Important methods:
+
+- compile(Language language, Path sourceDirectory, Path outputDirectory, String outputName)
+- collectSourceFiles(Language language, Path sourceDirectory)
+
+collectSourceFiles does this:
+
+- only scans regular files in the source directory
+- filters them by language-specific extensions
+- sorts them alphabetically by filename
+
+Language-specific source detection:
+
+- CPP: .cpp, .cc, .cxx, .hpp, .h
+- JAVA: .java
+- PYTHON: .py
+
+compile does this:
+
+- builds a command using CompileCommandBuilder
+- runs the command as a local process
+- captures stdout, stderr, and exit code
+- returns a CompileResult record
+
+13. Compile command building
+----------------------------
+
+The command builder is in:
+
+- file: src/main/java/autojudge/compiler/CompileCommandBuilder.java
+
+Current commands:
+
+- CPP -> g++ -std=c++17 -O2 -o <output> <sources...>
+- JAVA -> javac -d <outputDir> <sources...>
+- PYTHON -> python3 -m py_compile <sources...>
+
+14. Execution result structure
+------------------------------
+
+Each test case execution returns:
+
+- file: src/main/java/autojudge/model/ExecutionResult.java
+- record fields:
+  - testCaseId
+  - verdict
+  - studentOutput
+  - expectedOutput
+  - stderr
+  - exitCode
+  - executionTime
+  - memoryUsed
+
+In the current runner, the expectedOutput field is not populated from the
+expected file content; the grading stage reads the expected file separately.
+
+15. Grading stage
+-----------------
+
+Once the test case execution results are collected, Main calls:
+
+- file: src/main/java/autojudge/grading/GradingService.java
+- method: grade(Submission submission, List<TestCase> testCases, List<ExecutionResult> executionResults)
+
+Current grading flow:
+
+- Build a lookup table of TestCase objects by id.
+- Sum total weight across all test cases.
+- Iterate over execution results.
+- For each result, match it back to its TestCase.
+- Resolve a final verdict using resolveVerdict(...).
+- Add weight for accepted tests.
+- Count passed tests.
+- Track the worst verdict seen.
+- Calculate score as earnedWeight * 100 / totalWeight.
+
+If a submission passes some but not all tests and no worse verdict was found,
+the final verdict is downgraded to WRONG_ANSWER.
+
+16. Verdict resolution
+----------------------
+
+Verdict resolution happens in:
+
+- file: src/main/java/autojudge/grading/GradingService.java
+- method: resolveVerdict(ExecutionResult executionResult, TestCase testCase)
+
+Current behavior:
+
+- If the execution result is already not ACCEPTED, that verdict is returned
+  directly.
+- If the execution result is ACCEPTED, the service reads the expected output
+  file from disk using FileUtils.readText(...).
+- The output is compared with the student output using OutputComparator.
+- If they match, verdict stays ACCEPTED.
+- Otherwise, the verdict becomes WRONG_ANSWER.
+- If reading the expected output file fails, verdict becomes INTERNAL_ERROR.
+
+17. Output comparison
+---------------------
+
+Output normalization is handled by:
+
+- file: src/main/java/autojudge/grading/OutputComparator.java
+- method: normalize(String output)
+
+Current normalization rules:
+
+- null or empty output -> empty string
+- convert CRLF to LF
+- convert lone CR to LF
+- strip trailing whitespace from each line
+- strip trailing whitespace from the whole string
+
+Comparison is done by normalizing both expected and actual output and checking
+for string equality.
+
+18. Final result output
+-----------------------
+
+After grading, Main prints each SubmissionResult using:
+
+- file: src/main/java/autojudge/Main.java
+- line: System.out.println(result);
+
+Because SubmissionResult is a Java record, the output format is the default
+record toString() representation:
+
+SubmissionResult[submissionId=..., assignmentId=..., studentId=..., score=..., verdict=..., passedTests=..., totalTests=...]
+
+19. Current practical runtime path
+----------------------------------
+
+So the current real data path is:
+
+submissionsRoot / inputDirectory / outputDirectory / configFile / weightsFile
+    -> Main.main
+    -> AssignmentLoader.loadConfig
+    -> resolveLanguage + resolveImage
+    -> loadWeights
+    -> loadTestCases
+    -> listSubmissionFolders
+    -> SubmissionLoader.load
+    -> DockerRunner.runSubmission
+    -> DockerRunner.runTestCase
+    -> Compiler.compile
+    -> local process execution
+    -> ExecutionResult list
+    -> GradingService.grade
+    -> OutputComparator + FileUtils
+    -> SubmissionResult
+    -> System.out.println(result)
+
+20. Important current caveat
+----------------------------
+
+Despite the Docker naming, the current runner is not a full isolated Docker
+sandbox implementation yet. It currently behaves like a local execution runner
+with Docker-oriented configuration objects and structure around it.
+
+That means the current workflow is useful for testing the pipeline, but it is
+not yet the final secure execution architecture described in the README.
