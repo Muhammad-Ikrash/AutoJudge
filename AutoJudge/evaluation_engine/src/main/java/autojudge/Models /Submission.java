@@ -1,9 +1,13 @@
 package autojudge.Models ;
 
-public record Submission {
-    public Path filePath;
-    public Path inputFilePath;
-    public Path expectedOutputPath;
-    public String StudentID;
-    public String AssignmentID;
-}
+import java.nio.file.Path;
+
+public record Submission (
+    Path filePath,
+    Path inputFilePath,
+    Path ExpectedOutputFilePath,
+    String StudentID,
+    String AssignmentID
+) {
+
+};

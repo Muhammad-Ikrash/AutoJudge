@@ -1,6 +1,8 @@
 package autojudge.Docker;
 
-public record ContainerConfig (
+import java.nio.file.Path;
+
+record ContainerConfig (
     String image,
     long memoryLimit,
     double cpuLimit,
@@ -10,4 +12,9 @@ public record ContainerConfig (
 
 ) {
     
+    ContainerConfig(Path jsonConfig) {
+        // will write the mapping 
+    }
+
 }
+

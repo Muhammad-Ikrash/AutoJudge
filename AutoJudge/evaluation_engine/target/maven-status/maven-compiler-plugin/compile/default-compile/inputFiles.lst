@@ -1,8 +1,8 @@
-/home/ikrash-nub/UserData/AutoJudge/AutoJudge/EvaluationEngine/evaluation_engine/src/main/java/autojudge/Docker/ContainerConfig.java
-/home/ikrash-nub/UserData/AutoJudge/AutoJudge/EvaluationEngine/evaluation_engine/src/main/java/autojudge/Docker/ContainerManager.java
-/home/ikrash-nub/UserData/AutoJudge/AutoJudge/EvaluationEngine/evaluation_engine/src/main/java/autojudge/Docker/DockerClientFactory.java
-/home/ikrash-nub/UserData/AutoJudge/AutoJudge/EvaluationEngine/evaluation_engine/src/main/java/autojudge/Docker/DockerRunner.java
-/home/ikrash-nub/UserData/AutoJudge/AutoJudge/EvaluationEngine/evaluation_engine/src/main/java/autojudge/Main.java
-/home/ikrash-nub/UserData/AutoJudge/AutoJudge/EvaluationEngine/evaluation_engine/src/main/java/autojudge/Models /ExecutionResult.java
-/home/ikrash-nub/UserData/AutoJudge/AutoJudge/EvaluationEngine/evaluation_engine/src/main/java/autojudge/Models /Submission.java
-/home/ikrash-nub/UserData/AutoJudge/AutoJudge/EvaluationEngine/evaluation_engine/src/main/java/autojudge/Models /Verdict.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/Docker/ContainerConfig.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/Docker/ContainerManager.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/Docker/DockerClientFactory.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/Docker/DockerRunner.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/Main.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/Models /ExecutionResult.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/Models /Submission.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/Models /Verdict.java
