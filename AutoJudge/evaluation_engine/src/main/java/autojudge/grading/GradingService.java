@@ -65,7 +65,7 @@ public final class GradingService {
         }
 
         int totalTests = testCases.size();
-        double score = scoreCalculator.calculateScore(earnedWeight, totalWeight);
+        double score = finalVerdict == Verdict.MALICIOUS_CODE ? 0.0 : scoreCalculator.calculateScore(earnedWeight, totalWeight);
 
         if (passedTests != totalTests && finalVerdict == Verdict.ACCEPTED) {
             finalVerdict = Verdict.WRONG_ANSWER;
@@ -110,6 +110,7 @@ public final class GradingService {
             case MEMORY_LIMIT_EXCEEDED -> 4;
             case COMPILATION_ERROR -> 5;
             case INTERNAL_ERROR -> 6;
+            case MALICIOUS_CODE -> 7;
         };
     }
 

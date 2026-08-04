@@ -1,14 +1,16 @@
 autojudge/loader/AssignmentLoader.class
 autojudge/model/Submission.class
 autojudge/docker/ContainerManager$1.class
-autojudge/model/Language.class
+autojudge/docker/DockerRunner.class
 autojudge/exception/DockerException.class
-autojudge/compiler/Compiler$CompileResult.class
+autojudge/compiler/SubmissionLayout.class
 autojudge/Main.class
+autojudge/compiler/SubmissionScanner.class
 autojudge/model/SubmissionResult.class
+autojudge/docker/ContainerManager.class
 autojudge/compiler/CompileCommandBuilder$1.class
+autojudge/compiler/Language.class
 autojudge/model/Assignment.class
-autojudge/compiler/Compiler$1.class
 autojudge/grading/ScoreCalculator.class
 autojudge/model/TestCase.class
 autojudge/docker/DockerRunner$1.class
@@ -31,6 +33,6 @@ autojudge/docker/DockerConstants.class
 autojudge/Main$1.class
 autojudge/model/Assignment$ResourceLimits.class
 autojudge/loader/ConfigLoader.class
+autojudge/model/ExecCMD.class
 autojudge/exception/ExecutionException.class
-autojudge/compiler/Compiler.class
 autojudge/util/FileUtils.class

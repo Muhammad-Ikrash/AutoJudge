@@ -2,18 +2,15 @@ package autojudge.model;
 
 import java.nio.file.Path;
 
-import autojudge.compiler.SubmissionLayout;
-
 public record Submission(
-    Path SubmissionRootPath,
-    Path expectedOutputFolderPath,
-    Path inputFolderPath,
+    Path filePath,
+    Path inputFilePath,
+    Path expectedOutputFilePath,
     String studentId,
-    String assignmentId,
+    String assignmentId
 ) {
 
-    public Path getSubmissionRoot(){
-        return SubmissionRootPath;
+    public Path getSubmissionRoot() {
+        return filePath;
     }
-
 }

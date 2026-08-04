@@ -174,11 +174,23 @@ public final class Main {
         return weights;
     }
 
-
+    private static Language resolveLanguage(String lang) {
+        if (lang == null) {
+            return Language.CPP;
+        }
+        String lower = lang.trim().toLowerCase();
+        return switch (lower) {
+            case "cpp", "c++", "cxx", "cc" -> Language.CPP;
+            case "c" -> Language.C;
+            case "java" -> Language.JAVA;
+            case "python", "py", "python3" -> Language.PYTHON;
+            default -> Language.CPP;
+        };
+    }
 
     private static String resolveImage(Language language) {
         return switch (language) {
-            case CPP -> "gcc:13";
+            case CPP, C -> "gcc:13";
             case JAVA -> "eclipse-temurin:21-jdk";
             case PYTHON -> "python:3.12-slim";
         };

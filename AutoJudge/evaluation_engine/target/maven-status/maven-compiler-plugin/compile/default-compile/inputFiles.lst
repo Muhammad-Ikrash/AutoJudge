@@ -1,6 +1,8 @@
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/Main.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/compiler/CompileCommandBuilder.java
-/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/compiler/Compiler.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/compiler/Language.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/compiler/SubmissionLayout.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/compiler/SubmissionScanner.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/docker/ContainerConfig.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/docker/ContainerManager.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/docker/DockerClientFactory.java
@@ -19,7 +21,6 @@
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/model/Assignment.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/model/ExecCMD.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/model/ExecutionResult.java
-/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/model/Language.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/model/Submission.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/model/SubmissionResult.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/model/TestCase.java
