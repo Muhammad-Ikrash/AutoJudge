@@ -8,12 +8,10 @@ RUN apk add --no-cache \
     sed \
     tar \
     gzip \
-    git \
     gcc \
     g++ \
     musl-dev \
     make \
-    python3 \
-    py3-pip
+    python3
 
 CMD ["sleep", "infinity"]
