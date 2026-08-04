@@ -26,33 +26,60 @@ public final class GradingService {
         this.scoreCalculator = scoreCalculator;
     }
 
+    /**
+     * Primary grading entry point. Reads like top-level pseudocode.
+     */
     public SubmissionResult grade(
         Submission submission,
         List<TestCase> testCases,
         List<ExecutionResult> executionResults
     ) {
-        Map<String, TestCase> testCaseById = new HashMap<>();
+        Map<String, TestCase> testCaseById = indexTestCases(testCases);
+        int totalWeight = calculateTotalWeight(testCases);
+
+        EvaluationGrade grade = evaluateAllResults(testCaseById, executionResults);
+
+        double score = calculateFinalScore(grade.finalVerdict(), grade.earnedWeight(), totalWeight);
+        Verdict finalVerdict = determineFinalVerdict(grade.finalVerdict(), grade.passedTests(), testCases.size());
+
+        return buildSubmissionResult(submission, score, finalVerdict, grade.passedTests(), testCases.size());
+    }
+
+    // =========================================================================
+    // Single-Responsibility Helper Methods
+    // =========================================================================
+    private Map<String, TestCase> indexTestCases(List<TestCase> testCases) {
+        Map<String, TestCase> map = new HashMap<>();
         for (TestCase testCase : testCases) {
             if (testCase != null && testCase.id() != null) {
-                testCaseById.putIfAbsent(testCase.id(), testCase);
+                map.putIfAbsent(testCase.id(), testCase);
             }
         }
+        return map;
+    }
 
-        int passedTests = 0;
-        int earnedWeight = 0;
-        int totalWeight = 0;
-        Verdict finalVerdict = Verdict.ACCEPTED;
-
+    private int calculateTotalWeight(List<TestCase> testCases) {
+        int total = 0;
         for (TestCase testCase : testCases) {
             if (testCase != null) {
-                totalWeight += testCase.weight();
+                total += testCase.weight();
             }
         }
+        return total;
+    }
+
+    private EvaluationGrade evaluateAllResults(
+            Map<String, TestCase> testCaseById,
+            List<ExecutionResult> executionResults
+    ) {
+        int passedTests = 0;
+        int earnedWeight = 0;
+        Verdict worstVerdict = Verdict.ACCEPTED;
 
         for (ExecutionResult executionResult : executionResults) {
             TestCase testCase = testCaseById.get(executionResult.testCaseId());
             if (testCase == null) {
-                finalVerdict = worseVerdict(finalVerdict, Verdict.INTERNAL_ERROR);
+                worstVerdict = resolveWorseVerdict(worstVerdict, Verdict.INTERNAL_ERROR);
                 continue;
             }
 
@@ -61,25 +88,10 @@ public final class GradingService {
                 passedTests++;
                 earnedWeight += testCase.weight();
             }
-            finalVerdict = worseVerdict(finalVerdict, verdict);
+            worstVerdict = resolveWorseVerdict(worstVerdict, verdict);
         }
 
-        int totalTests = testCases.size();
-        double score = finalVerdict == Verdict.MALICIOUS_CODE ? 0.0 : scoreCalculator.calculateScore(earnedWeight, totalWeight);
-
-        if (passedTests != totalTests && finalVerdict == Verdict.ACCEPTED) {
-            finalVerdict = Verdict.WRONG_ANSWER;
-        }
-
-        return new SubmissionResult(
-            resolveSubmissionId(submission),
-            submission.assignmentId(),
-            submission.studentId(),
-            score,
-            finalVerdict,
-            passedTests,
-            totalTests
-        );
+        return new EvaluationGrade(passedTests, earnedWeight, worstVerdict);
     }
 
     public Verdict resolveVerdict(ExecutionResult executionResult, TestCase testCase) {
@@ -97,11 +109,25 @@ public final class GradingService {
         }
     }
 
-    private Verdict worseVerdict(Verdict current, Verdict candidate) {
-        return severity(candidate) > severity(current) ? candidate : current;
+    private double calculateFinalScore(Verdict finalVerdict, int earnedWeight, int totalWeight) {
+        if (finalVerdict == Verdict.MALICIOUS_CODE) {
+            return 0.0;
+        }
+        return scoreCalculator.calculateScore(earnedWeight, totalWeight);
     }
 
-    private int severity(Verdict verdict) {
+    private Verdict determineFinalVerdict(Verdict currentWorst, int passedTests, int totalTests) {
+        if (passedTests != totalTests && currentWorst == Verdict.ACCEPTED) {
+            return Verdict.WRONG_ANSWER;
+        }
+        return currentWorst;
+    }
+
+    private Verdict resolveWorseVerdict(Verdict current, Verdict candidate) {
+        return getSeverityRank(candidate) > getSeverityRank(current) ? candidate : current;
+    }
+
+    private int getSeverityRank(Verdict verdict) {
         return switch (verdict) {
             case ACCEPTED -> 0;
             case WRONG_ANSWER -> 1;
@@ -114,10 +140,28 @@ public final class GradingService {
         };
     }
 
-    private String resolveSubmissionId(Submission submission) {
-        if (submission.filePath() == null || submission.filePath().getFileName() == null) {
-            return "";
-        }
-        return submission.filePath().getFileName().toString();
+    private SubmissionResult buildSubmissionResult(
+            Submission submission,
+            double score,
+            Verdict finalVerdict,
+            int passedTests,
+            int totalTests
+    ) {
+        String submissionId = (submission.filePath() != null && submission.filePath().getFileName() != null)
+                ? submission.filePath().getFileName().toString()
+                : "";
+
+        return new SubmissionResult(
+            submissionId,
+            submission.assignmentId(),
+            submission.studentId(),
+            score,
+            finalVerdict,
+            passedTests,
+            totalTests
+        );
     }
+
+    // Helper record for intermediate grade accumulation
+    private record EvaluationGrade(int passedTests, int earnedWeight, Verdict finalVerdict) {}
 }

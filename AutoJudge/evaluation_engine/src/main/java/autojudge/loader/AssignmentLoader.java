@@ -26,7 +26,6 @@ public class AssignmentLoader {
 			extractDouble(json, "cpuLimit")
 		);
 		Assignment.ExecutionProfile executionProfile = new Assignment.ExecutionProfile(
-			extractString(json, "language"),
 			extractBoolean(json, "autoRemove"),
 			extractString(json, "workingDirectory")
 		);

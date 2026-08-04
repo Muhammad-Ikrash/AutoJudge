@@ -1,6 +1,5 @@
 package autojudge;
 
-import autojudge.compiler.Language;
 import autojudge.docker.ContainerConfig;
 import autojudge.docker.DockerRunner;
 import autojudge.grading.GradingService;
@@ -18,7 +17,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -33,11 +31,21 @@ public final class Main {
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length != EXPECTED_ARGUMENT_COUNT) {
+        if (!hasValidArgumentCount(args)) {
             printUsage();
             return;
         }
 
+        EvaluationContext context = parseEvaluationContext(args);
+        List<SubmissionResult> results = evaluateAllSubmissions(context);
+        printSubmissionResults(results);
+    }
+
+    private static boolean hasValidArgumentCount(String[] args) {
+        return args != null && args.length == EXPECTED_ARGUMENT_COUNT;
+    }
+
+    private static EvaluationContext parseEvaluationContext(String[] args) throws Exception {
         Path submissionsRoot = Path.of(args[0]);
         Path inputDirectory = Path.of(args[1]);
         Path outputDirectory = Path.of(args[2]);
@@ -45,31 +53,58 @@ public final class Main {
         Path weightsFile = Path.of(args[4]);
 
         Assignment assignment = AssignmentLoader.loadConfig(configFile);
-        Language language = resolveLanguage(assignment.executionProfile().language());
         Map<String, Integer> weightsByTestCase = loadWeights(weightsFile);
         List<TestCase> testCases = loadTestCases(inputDirectory, outputDirectory, weightsByTestCase);
-
-        ContainerConfig containerConfig = ContainerConfig.from(assignment, resolveImage(language));
-        DockerRunner dockerRunner = new DockerRunner();
-        GradingService gradingService = new GradingService();
-
+        ContainerConfig containerConfig = ContainerConfig.from(assignment);
         List<Path> submissionFolders = listSubmissionFolders(submissionsRoot);
-        List<SubmissionResult> results = new ArrayList<>();
 
-        for (Path submissionFolder : submissionFolders) {
-            String studentId = resolveStudentId(submissionFolder);
-            Submission submission = SubmissionLoader.load(
-                submissionFolder,
+        return new EvaluationContext(
+                submissionsRoot,
                 inputDirectory,
                 outputDirectory,
-                studentId,
-                assignment.assignmentId()
-            );
+                assignment,
+                containerConfig,
+                testCases,
+                submissionFolders
+        );
+    }
 
-            List<ExecutionResult> executionResults = dockerRunner.runSubmission(containerConfig, submission, testCases);
-            results.add(gradingService.grade(submission, testCases, executionResults));
+    private static List<SubmissionResult> evaluateAllSubmissions(EvaluationContext context) throws Exception {
+        DockerRunner dockerRunner = new DockerRunner();
+        GradingService gradingService = new GradingService();
+        List<SubmissionResult> results = new ArrayList<>();
+
+        for (Path submissionFolder : context.submissionFolders()) {
+            SubmissionResult result = evaluateSingleSubmission(context, submissionFolder, dockerRunner, gradingService);
+            results.add(result);
         }
 
+        return results;
+    }
+
+    private static SubmissionResult evaluateSingleSubmission(
+            EvaluationContext context,
+            Path submissionFolder,
+            DockerRunner dockerRunner,
+            GradingService gradingService
+    ) throws Exception {
+        String studentId = resolveStudentId(submissionFolder);
+        Submission submission = SubmissionLoader.load(
+                submissionFolder,
+                context.inputDirectory(),
+                context.outputDirectory(),
+                studentId,
+                context.assignment().assignmentId()
+        );
+
+        List<ExecutionResult> executionResults = dockerRunner.runSubmission(
+                context.containerConfig(), submission, context.testCases()
+        );
+
+        return gradingService.grade(submission, context.testCases(), executionResults);
+    }
+
+    private static void printSubmissionResults(List<SubmissionResult> results) {
         for (SubmissionResult result : results) {
             System.out.println(result);
         }
@@ -105,42 +140,57 @@ public final class Main {
         Path outputDirectory,
         Map<String, Integer> weightsByTestCase
     ) throws IOException {
-        Map<String, Path> inputsByStem = indexFilesByStem(inputDirectory);
-        Map<String, Path> outputsByStem = indexFilesByStem(outputDirectory);
+        List<Path> inputFiles = listFilesInDirectory(inputDirectory);
+        List<Path> outputFiles = listFilesInDirectory(outputDirectory);
+
+        Map<String, Path> outputsByNormalizedKey = new HashMap<>();
+        for (Path outFile : outputFiles) {
+            String rawStem = fileStem(outFile.getFileName().toString());
+            outputsByNormalizedKey.put(rawStem, outFile);
+            outputsByNormalizedKey.put(normalizeStem(rawStem), outFile);
+        }
 
         List<TestCase> testCases = new ArrayList<>();
-        for (Map.Entry<String, Path> entry : inputsByStem.entrySet()) {
-            String testCaseId = entry.getKey();
-            Path inputFile = entry.getValue();
-            Path expectedOutput = outputsByStem.getOrDefault(
-                testCaseId,
-                outputDirectory.resolve(resolveFileName(testCaseId, ".out"))
-            );
-            int weight = weightsByTestCase.getOrDefault(testCaseId, 1);
-            testCases.add(new TestCase(testCaseId, inputFile, expectedOutput, weight));
+        for (int i = 0; i < inputFiles.size(); i++) {
+            Path inFile = inputFiles.get(i);
+            String rawStem = fileStem(inFile.getFileName().toString());
+            String normStem = normalizeStem(rawStem);
+
+            Path matchedOutFile = outputsByNormalizedKey.get(rawStem);
+            if (matchedOutFile == null) {
+                matchedOutFile = outputsByNormalizedKey.get(normStem);
+            }
+            if (matchedOutFile == null && i < outputFiles.size()) {
+                matchedOutFile = outputFiles.get(i);
+            }
+
+            int weight = weightsByTestCase.getOrDefault(rawStem, weightsByTestCase.getOrDefault(normStem, 1));
+            testCases.add(new TestCase(rawStem, inFile, matchedOutFile, weight));
         }
 
         return testCases;
     }
 
-    private static Map<String, Path> indexFilesByStem(Path directory) throws IOException {
-        Map<String, Path> filesByStem = new LinkedHashMap<>();
+    private static List<Path> listFilesInDirectory(Path directory) throws IOException {
         if (!Files.isDirectory(directory)) {
-            return filesByStem;
+            return List.of();
         }
-
-        List<Path> files = new ArrayList<>();
         try (var stream = Files.list(directory)) {
-            stream
+            return stream
                 .filter(Files::isRegularFile)
                 .sorted(Comparator.comparing(path -> path.getFileName().toString()))
-                .forEach(files::add);
+                .toList();
         }
+    }
 
-        for (Path file : files) {
-            filesByStem.putIfAbsent(fileStem(file.getFileName().toString()), file);
-        }
-        return filesByStem;
+    private static String normalizeStem(String stem) {
+        if (stem == null) return "";
+        return stem.toLowerCase()
+                .replace("test_input", "")
+                .replace("test_output", "")
+                .replace("input", "")
+                .replace("output", "")
+                .trim();
     }
 
     private static Map<String, Integer> loadWeights(Path weightsFile) throws IOException {
@@ -174,30 +224,8 @@ public final class Main {
         return weights;
     }
 
-    private static Language resolveLanguage(String lang) {
-        if (lang == null) {
-            return Language.CPP;
-        }
-        String lower = lang.trim().toLowerCase();
-        return switch (lower) {
-            case "cpp", "c++", "cxx", "cc" -> Language.CPP;
-            case "c" -> Language.C;
-            case "java" -> Language.JAVA;
-            case "python", "py", "python3" -> Language.PYTHON;
-            default -> Language.CPP;
-        };
-    }
-
-    private static String resolveImage(Language language) {
-        return switch (language) {
-            case CPP, C -> "gcc:13";
-            case JAVA -> "eclipse-temurin:21-jdk";
-            case PYTHON -> "python:3.12-slim";
-        };
-    }
-
     private static String resolveStudentId(Path submissionFolder) {
-        if (submissionFolder.getFileName() == null) {
+        if (submissionFolder == null || submissionFolder.getFileName() == null) {
             return "";
         }
         return submissionFolder.getFileName().toString();
@@ -211,7 +239,13 @@ public final class Main {
         return fileName.substring(0, dotIndex);
     }
 
-    private static String resolveFileName(String stem, String extension) {
-        return stem + extension;
-    }
+    private record EvaluationContext(
+            Path submissionsRoot,
+            Path inputDirectory,
+            Path outputDirectory,
+            Assignment assignment,
+            ContainerConfig containerConfig,
+            List<TestCase> testCases,
+            List<Path> submissionFolders
+    ) {}
 }

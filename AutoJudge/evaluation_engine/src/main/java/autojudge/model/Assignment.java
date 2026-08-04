@@ -14,7 +14,6 @@ public record Assignment(
 	}
 
 	public record ExecutionProfile(
-		String language,
 		boolean autoRemove,
 		String workingDirectory
 	) {

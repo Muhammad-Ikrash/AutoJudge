@@ -1,0 +1,76 @@
+================================================================================
+AutoJudge Evaluation Engine — Grading Rules & Data Format Specification
+================================================================================
+
+1. REQUIRED DATA FORMAT SPECIFICATIONS
+--------------------------------------------------------------------------------
+
+A. Assignment Configuration (`config.json`)
+{
+  "assignmentId": "assignment-1",
+  "executionProfile": {
+    "workingDirectory": "/workspace",
+    "autoRemove": true
+  },
+  "resourceLimits": {
+    "memoryLimitMb": 512,      // Memory limit in MB
+    "cpuLimit": 1.0,           // CPU core limit
+    "timeLimitMs": 1000        // Per-testcase time limit in milliseconds
+  }
+}
+Note: Language is auto-detected from source files at runtime by `SubmissionScanner`.
+
+B. Container Image Configuration
+The default universal container image is configured at the top of `DockerConstants.java`:
+  `public static final String DEFAULT_IMAGE = "auto-judge-container:v1.0";`
+
+C. Test Case Weights (`weights.json`)
+{
+  "test_input (1)": 10,
+  "test_input (2)": 20,
+  "test_input (3)": 30
+}
+Note: Unlisted test cases default to a weight of 1.
+
+D. Input & Output Test Case Pairing
+Files in `inputDirectory` and `outputDirectory` are paired by:
+  1. Direct stem match (e.g. `case1.in` <-> `case1.out`)
+  2. Normalized stem match (e.g. `test_input (1).txt` <-> `test_output (1).txt`)
+  3. Sorted index fallback (i-th input paired with i-th expected output file)
+
+E. Execution Commands (`ExecutionCommandBuilder`)
+Runner commands are automatically generated with quoted input path escaping:
+  - C/C++  : `./solution < 'input.txt'`
+  - Python : `python3 main.py < 'input.txt'`
+  - Java   : `java Main < 'input.txt'`
+
+
+2. VERDICT DEFINITIONS & SEVERITY HIERARCHY
+--------------------------------------------------------------------------------
+Overall submission verdict is assigned the highest-severity verdict among executed test cases:
+
+  Verdict               | Description                                           | Severity
+  --------------------- | ----------------------------------------------------- | --------
+  MALICIOUS_CODE        | Unauthorized file creation inside container sandbox    | 1 (Highest)
+  INTERNAL_ERROR        | Infrastructure failure / unhandled engine exception    | 2
+  COMPILATION_ERROR     | Code failed to compile inside sandbox                  | 3
+  MEMORY_LIMIT_EXCEEDED | Killed by Linux OOM killer / Docker memory ceiling     | 4
+  TIME_LIMIT_EXCEEDED   | Process timed out via GNU timeout / SIGKILL            | 5
+  RUNTIME_ERROR         | Non-zero exit code or output size > 1MB limit          | 6
+  WRONG_ANSWER           | Output string mismatch against expected output         | 7
+  ACCEPTED              | Output matches expected output perfectly               | 8 (Lowest)
+
+
+3. SCORING & VERDICT RULES
+--------------------------------------------------------------------------------
+1. Test Case Evaluation:
+   - `ACCEPTED`: Earns assigned weight points.
+   - Non-ACCEPTED Verdicts: Earn 0 points.
+
+2. Malicious Code Policy:
+   - Container is destroyed immediately upon unauthorized file creation.
+   - All subsequent test cases are marked `MALICIOUS_CODE`.
+   - Final submission score is forced to `0.0`.
+
+3. Final Score Formula:
+   Score (%) = (Earned Weight Points / Total Test Case Weight Points) * 100.0

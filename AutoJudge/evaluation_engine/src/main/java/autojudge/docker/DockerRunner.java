@@ -1,6 +1,7 @@
 package autojudge.docker;
 
 import autojudge.compiler.CompileCommandBuilder;
+import autojudge.compiler.ExecutionCommandBuilder;
 import autojudge.compiler.SubmissionLayout;
 import autojudge.compiler.SubmissionScanner;
 import autojudge.model.ExecCMD;
@@ -15,6 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class DockerRunner {
 
@@ -34,216 +36,310 @@ public final class DockerRunner {
             Submission submission,
             List<TestCase> testCases
     ) {
-        List<ExecutionResult> results = new ArrayList<>();
         String containerId = null;
-
         try {
-            // 1. Container created first with configs and started
-            containerId = containerManager.createInstance(config);
-            containerManager.startInstance(containerId);
+            log("Step 1: Provisioning & starting Docker container for student: " + submission.studentId());
+            containerId = createAndStartContainer(config);
+            log("Container started successfully. ID: " + containerId);
 
-            Path targetContainerPath = Path.of(config.workingDirectory());
+            log("Step 2: Copying submission source files into container");
+            String submissionDir = copySubmissionToContainer(containerId, config, submission);
+            log("Submission copied to container path: " + submissionDir);
 
-            // Check docker copy convention: does target folder already exist inside container?
-            boolean targetAlreadyExists = containerManager.directoryExists(containerId, targetContainerPath.toString());
-
-            // 2. Copy submission files into container
-            containerManager.copyToContainer(containerId, submission.getSubmissionRoot(), targetContainerPath);
-
-            String submissionFolderName = submission.getSubmissionRoot().getFileName() != null
-                    ? submission.getSubmissionRoot().getFileName().toString()
-                    : "";
-
-            // If target folder already existed, data is copied into target/submissionFolderName
-            // If target folder did not exist, data is copied directly inside target folder created on spot
-            String containerSubmissionDir = targetAlreadyExists && !submissionFolderName.isEmpty()
-                    ? targetContainerPath.resolve(submissionFolderName).toString()
-                    : targetContainerPath.toString();
-
-            // 3. Scan submission and compile within container
+            log("Step 3: Scanning layout and compiling submission inside container");
             SubmissionLayout layout = SubmissionScanner.scan(submission.getSubmissionRoot());
-            List<String> rawCompileCommand = CompileCommandBuilder.buildCommand(layout);
-
-            if (!rawCompileCommand.isEmpty()) {
-                // Wrap compilation command with timeout (30 seconds limit)
-                String compileScript = "timeout -k 1s 30s " + String.join(" ", rawCompileCommand);
-                ExecCMD compileResult = containerManager.execInDir(containerId, List.of("sh", "-c", compileScript), containerSubmissionDir);
-                if (compileResult.getExitCode() != 0) {
-                    Verdict compileVerdict = (compileResult.getExitCode() == 124 || compileResult.getExitCode() == 137)
-                            ? Verdict.TIME_LIMIT_EXCEEDED
-                            : Verdict.COMPILATION_ERROR;
-
-                    for (TestCase testCase : testCases) {
-                        results.add(new ExecutionResult(
-                                testCase.id(),
-                                compileVerdict,
-                                "",
-                                "",
-                                compileResult.getStderr(),
-                                compileResult.getExitCode(),
-                                0,
-                                0
-                        ));
-                    }
-                    return results;
-                }
+            ExecCMD compileResult = compileSubmission(containerId, submissionDir, layout);
+            if (isCompileFailed(compileResult)) {
+                log("Compilation failed with exit code " + compileResult.getExitCode());
+                return buildCompilationErrorResults(testCases, compileResult);
             }
+            log("Compilation succeeded");
 
-            // 4. Testcase execution loop
-            long timeLimitSec = config.timeLimitSeconds();
-
-            for (TestCase testCase : testCases) {
-                if (testCase == null) continue;
-
-                String testCaseInputFileName = testCase.inputFile().getFileName() != null
-                        ? testCase.inputFile().getFileName().toString()
-                        : "input.in";
-                String testCaseContainerPath = containerSubmissionDir + "/" + testCaseInputFileName;
-                containerManager.copyToContainer(containerId, testCase.inputFile(), Path.of(containerSubmissionDir));
-
-                // Snapshot files copied / existing before execution
-                List<String> filesBeforeExecList = containerManager.listFiles(containerId, containerSubmissionDir);
-                Set<String> filesBeforeExec = new HashSet<>(filesBeforeExecList);
-
-                long startTime = System.currentTimeMillis();
-
-                // Build runner script wrapped with per-test-case timeout and SIGKILL escalation (-k 1s)
-                String rawRunnerScript = resolveExecutionCommand(layout, testCaseInputFileName);
-                String runnerScript = "timeout -k 1s " + timeLimitSec + "s " + rawRunnerScript;
-
-                List<String> execCmd = List.of("sh", "-c", runnerScript);
-                ExecCMD execResult = containerManager.execInDir(containerId, execCmd, containerSubmissionDir);
-                long executionTime = System.currentTimeMillis() - startTime;
-
-                // Malicious code check: snapshot files after execution
-                List<String> filesAfterExecList = containerManager.listFiles(containerId, containerSubmissionDir);
-                Set<String> filesAfterExec = new HashSet<>(filesAfterExecList);
-                filesAfterExec.removeAll(filesBeforeExec);
-
-                if (!filesAfterExec.isEmpty()) {
-                    // Code created unauthorized files -> Malicious Code!
-                    // Destroy container immediately and edit verdict
-                    containerManager.kill(containerId);
-                    containerManager.removeContainer(containerId);
-                    containerId = null;
-
-                    results.add(new ExecutionResult(
-                            testCase.id(),
-                            Verdict.MALICIOUS_CODE,
-                            "",
-                            "",
-                            "Malicious code detected: created unauthorized file(s) " + filesAfterExec,
-                            -1,
-                            executionTime,
-                            0
-                    ));
-
-                    int currentIdx = testCases.indexOf(testCase);
-                    for (int i = currentIdx + 1; i < testCases.size(); i++) {
-                        TestCase remaining = testCases.get(i);
-                        if (remaining != null) {
-                            results.add(new ExecutionResult(
-                                    remaining.id(),
-                                    Verdict.MALICIOUS_CODE,
-                                    "",
-                                    "",
-                                    "Execution aborted due to malicious code",
-                                    -1,
-                                    0,
-                                    0
-                            ));
-                        }
-                    }
-                    break;
-                }
-
-                // Check output size capping
-                String stdout = execResult.getStdout() != null ? execResult.getStdout() : "";
-                String stderr = execResult.getStderr() != null ? execResult.getStderr() : "";
-                boolean outputExceeded = stdout.length() > MAX_OUTPUT_LENGTH || stderr.length() > MAX_OUTPUT_LENGTH;
-
-                if (outputExceeded) {
-                    if (stdout.length() > MAX_OUTPUT_LENGTH) stdout = stdout.substring(0, MAX_OUTPUT_LENGTH) + "\n[Output truncated]";
-                    if (stderr.length() > MAX_OUTPUT_LENGTH) stderr = stderr.substring(0, MAX_OUTPUT_LENGTH) + "\n[Output truncated]";
-                }
-
-                // Determine verdict from exit code and container inspect (OOM)
-                Verdict verdict;
-                int exitCode = execResult.getExitCode();
-
-                if (outputExceeded) {
-                    verdict = Verdict.RUNTIME_ERROR;
-                    stderr = stderr + "\nOutput limit exceeded";
-                } else if (exitCode == 0) {
-                    verdict = Verdict.ACCEPTED;
-                } else if (exitCode == 124 || exitCode == 137) {
-                    if (containerManager.isOOMKilled(containerId)) {
-                        verdict = Verdict.MEMORY_LIMIT_EXCEEDED;
-                    } else {
-                        verdict = Verdict.TIME_LIMIT_EXCEEDED;
-                    }
-                } else {
-                    if (containerManager.isOOMKilled(containerId)) {
-                        verdict = Verdict.MEMORY_LIMIT_EXCEEDED;
-                    } else {
-                        verdict = Verdict.RUNTIME_ERROR;
-                    }
-                }
-
-                results.add(new ExecutionResult(
-                        testCase.id(),
-                        verdict,
-                        stdout,
-                        "",
-                        stderr,
-                        exitCode,
-                        executionTime,
-                        0
-                ));
-
-                // Clean up testcase input file so only compiled and submission files remain
-                containerManager.removeFile(containerId, testCaseContainerPath);
-            }
+            log("Step 4: Executing " + testCases.size() + " test cases");
+            return executeAllTestCases(containerId, submissionDir, layout, testCases, config.timeLimitSeconds());
 
         } catch (Exception e) {
-            if (results.isEmpty()) {
-                for (TestCase testCase : testCases) {
-                    if (testCase != null) {
-                        results.add(new ExecutionResult(
-                                testCase.id(),
-                                Verdict.INTERNAL_ERROR,
-                                "",
-                                "",
-                                e.getMessage(),
-                                -1,
-                                0,
-                                0
-                        ));
-                    }
-                }
-            }
+            logError("Execution failed due to exception: " + e.getMessage(), e);
+            return buildInternalErrorResults(testCases, e);
         } finally {
-            if (containerId != null) {
-                containerManager.stopContainer(containerId);
-                containerManager.removeContainer(containerId);
+            log("Step 5: Cleaning up container resources");
+            destroyContainer(containerId);
+        }
+    }
+
+    private String createAndStartContainer(ContainerConfig config) throws Exception {
+        String containerId = containerManager.createInstance(config);
+        containerManager.startInstance(containerId);
+        return containerId;
+    }
+
+    private String copySubmissionToContainer(
+            String containerId,
+            ContainerConfig config,
+            Submission submission
+    ) throws Exception {
+        Path targetContainerPath = Path.of(config.workingDirectory());
+        boolean targetAlreadyExists = containerManager.directoryExists(containerId, targetContainerPath.toString());
+
+        containerManager.copyToContainer(containerId, submission.getSubmissionRoot(), targetContainerPath);
+
+        String submissionFolderName = submission.getSubmissionRoot().getFileName() != null
+                ? submission.getSubmissionRoot().getFileName().toString()
+                : "";
+
+        return (targetAlreadyExists && !submissionFolderName.isEmpty())
+                ? targetContainerPath.resolve(submissionFolderName).toString()
+                : targetContainerPath.toString();
+    }
+
+    private ExecCMD compileSubmission(
+            String containerId,
+            String submissionDir,
+            SubmissionLayout layout
+    ) throws Exception {
+        List<String> rawCompileCommand = CompileCommandBuilder.buildCommand(layout);
+        if (rawCompileCommand.isEmpty()) {
+            return new ExecCMD(0, "", "");
+        }
+
+        String compileScript = "timeout -k 1s 30s " + String.join(" ", rawCompileCommand);
+        return containerManager.execInDir(containerId, List.of("sh", "-c", compileScript), submissionDir);
+    }
+
+    private boolean isCompileFailed(ExecCMD compileResult) {
+        return compileResult != null && compileResult.getExitCode() != 0;
+    }
+
+    private List<ExecutionResult> buildCompilationErrorResults(
+            List<TestCase> testCases,
+            ExecCMD compileResult
+    ) {
+        Verdict compileVerdict = (compileResult.getExitCode() == 124 || compileResult.getExitCode() == 137)
+                ? Verdict.TIME_LIMIT_EXCEEDED
+                : Verdict.COMPILATION_ERROR;
+
+        List<ExecutionResult> results = new ArrayList<>();
+        for (TestCase testCase : testCases) {
+            results.add(new ExecutionResult(
+                    testCase.id(),
+                    compileVerdict,
+                    "",
+                    "",
+                    compileResult.getStderr(),
+                    compileResult.getExitCode(),
+                    0,
+                    0
+            ));
+        }
+        return results;
+    }
+
+    private List<ExecutionResult> executeAllTestCases(
+            String containerId,
+            String submissionDir,
+            SubmissionLayout layout,
+            List<TestCase> testCases,
+            long timeLimitSec
+    ) throws Exception {
+        List<ExecutionResult> results = new ArrayList<>();
+
+        for (int i = 0; i < testCases.size(); i++) {
+            TestCase testCase = testCases.get(i);
+            if (testCase == null) continue;
+
+            log("Executing Test Case: " + testCase.id());
+            ExecutionResult result = executeSingleTestCase(containerId, submissionDir, layout, testCase, timeLimitSec);
+            log("Test Case " + testCase.id() + " finished -> Verdict: " + result.verdict() + " [ExitCode: " + result.exitCode() + ", Time: " + result.executionTime() + "ms]");
+
+            results.add(result);
+
+            if (result.verdict() == Verdict.MALICIOUS_CODE) {
+                log("Malicious code detected! Destroying container immediately.");
+                destroyContainer(containerId);
+                appendMaliciousCodeAbortionResults(results, testCases, i + 1);
+                break;
             }
         }
 
         return results;
     }
 
-    private String resolveExecutionCommand(SubmissionLayout layout, String inputFileName) {
-        return switch (layout.language()) {
-            case CPP, C -> "./solution < " + inputFileName;
-            case PYTHON -> {
-                String mainScript = layout.sourceFiles().isEmpty() ? "main.py" : layout.sourceFiles().get(0).toString();
-                yield "python3 " + mainScript + " < " + inputFileName;
+    private ExecutionResult executeSingleTestCase(
+            String containerId,
+            String submissionDir,
+            SubmissionLayout layout,
+            TestCase testCase,
+            long timeLimitSec
+    ) throws Exception {
+        String inputFileName = resolveInputFileName(testCase);
+        String testCaseContainerPath = submissionDir + "/" + inputFileName;
+
+        containerManager.copyToContainer(containerId, testCase.inputFile(), Path.of(submissionDir));
+
+        Set<String> filesBeforeExec = new HashSet<>(containerManager.listFiles(containerId, submissionDir));
+        long startTime = System.currentTimeMillis();
+
+        String runnerScript = "timeout -k 1s " + timeLimitSec + "s " + ExecutionCommandBuilder.buildExecutionCommand(layout, inputFileName);
+        ExecCMD execResult = containerManager.execInDir(
+                containerId, List.of("sh", "-c", runnerScript), submissionDir, timeLimitSec
+        );
+        long executionTime = System.currentTimeMillis() - startTime;
+
+        Set<String> filesAfterExec = new HashSet<>(containerManager.listFiles(containerId, submissionDir));
+        Set<String> unauthorizedFiles = detectUnauthorizedFiles(filesBeforeExec, filesAfterExec);
+
+        if (!unauthorizedFiles.isEmpty()) {
+            return new ExecutionResult(
+                    testCase.id(),
+                    Verdict.MALICIOUS_CODE,
+                    "",
+                    "",
+                    "Malicious code detected: created unauthorized file(s) " + unauthorizedFiles,
+                    -1,
+                    executionTime,
+                    0
+            );
+        }
+
+        containerManager.removeFile(containerId, testCaseContainerPath);
+        return evaluateExecutionResult(containerId, testCase, execResult, executionTime);
+    }
+
+    private String resolveInputFileName(TestCase testCase) {
+        return (testCase.inputFile() != null && testCase.inputFile().getFileName() != null)
+                ? testCase.inputFile().getFileName().toString()
+                : "input.in";
+    }
+
+    private Set<String> detectUnauthorizedFiles(Set<String> filesBefore, Set<String> filesAfter) {
+        Set<String> createdFiles = new HashSet<>(filesAfter);
+        createdFiles.removeAll(filesBefore);
+        return createdFiles.stream()
+                .filter(f -> !isAllowedOrBenignFile(f))
+                .collect(Collectors.toSet());
+    }
+
+    private boolean isAllowedOrBenignFile(String filePath) {
+        if (filePath == null || filePath.isBlank()) return true;
+        String lower = filePath.toLowerCase();
+
+        if (lower.contains("__pycache__") || lower.endsWith(".pyc") || lower.endsWith(".pyo")) {
+            return true;
+        }
+        if (lower.endsWith(".class") || lower.contains("hs_err_pid")) {
+            return true;
+        }
+        if (lower.endsWith(".tmp") || lower.endsWith(".log") || lower.endsWith(".out") || lower.endsWith(".txt")) {
+            return true;
+        }
+        return false;
+    }
+
+    private ExecutionResult evaluateExecutionResult(
+            String containerId,
+            TestCase testCase,
+            ExecCMD execResult,
+            long executionTime
+    ) {
+        String stdout = execResult.getStdout() != null ? execResult.getStdout() : "";
+        String stderr = execResult.getStderr() != null ? execResult.getStderr() : "";
+        boolean outputExceeded = execResult.isTruncated() || stdout.length() > MAX_OUTPUT_LENGTH || stderr.length() > MAX_OUTPUT_LENGTH;
+
+        if (outputExceeded) {
+            if (stdout.length() > MAX_OUTPUT_LENGTH) stdout = stdout.substring(0, MAX_OUTPUT_LENGTH) + "\n[Output truncated]";
+            if (stderr.length() > MAX_OUTPUT_LENGTH) stderr = stderr.substring(0, MAX_OUTPUT_LENGTH) + "\n[Output truncated]";
+        }
+
+        Verdict verdict = determineVerdict(containerId, execResult.getExitCode(), outputExceeded);
+        if (outputExceeded) {
+            stderr = stderr + "\nOutput limit exceeded";
+        }
+
+        return new ExecutionResult(
+                testCase.id(),
+                verdict,
+                stdout,
+                "",
+                stderr,
+                execResult.getExitCode(),
+                executionTime,
+                0
+        );
+    }
+
+    private Verdict determineVerdict(String containerId, int exitCode, boolean outputExceeded) {
+        if (outputExceeded) {
+            return Verdict.RUNTIME_ERROR;
+        }
+        if (exitCode == 0) {
+            return Verdict.ACCEPTED;
+        }
+
+        boolean isOOM = containerManager.isOOMKilled(containerId);
+        if (exitCode == 124 || exitCode == 137) {
+            return isOOM ? Verdict.MEMORY_LIMIT_EXCEEDED : Verdict.TIME_LIMIT_EXCEEDED;
+        }
+        return isOOM ? Verdict.MEMORY_LIMIT_EXCEEDED : Verdict.RUNTIME_ERROR;
+    }
+
+    private void appendMaliciousCodeAbortionResults(
+            List<ExecutionResult> results,
+            List<TestCase> testCases,
+            int startIndex
+    ) {
+        for (int i = startIndex; i < testCases.size(); i++) {
+            TestCase remaining = testCases.get(i);
+            if (remaining != null) {
+                results.add(new ExecutionResult(
+                        remaining.id(),
+                        Verdict.MALICIOUS_CODE,
+                        "",
+                        "",
+                        "Execution aborted due to malicious code",
+                        -1,
+                        0,
+                        0
+                ));
             }
-            case JAVA -> {
-                String mainClass = layout.sourceFiles().isEmpty() ? "Main" : layout.sourceFiles().get(0).toString().replace(".java", "");
-                yield "java " + mainClass + " < " + inputFileName;
+        }
+    }
+
+    private List<ExecutionResult> buildInternalErrorResults(List<TestCase> testCases, Exception e) {
+        List<ExecutionResult> results = new ArrayList<>();
+        for (TestCase testCase : testCases) {
+            if (testCase != null) {
+                results.add(new ExecutionResult(
+                        testCase.id(),
+                        Verdict.INTERNAL_ERROR,
+                        "",
+                        "",
+                        e.getMessage() != null ? e.getMessage() : e.getClass().getName(),
+                        -1,
+                        0,
+                        0
+                ));
             }
-        };
+        }
+        return results;
+    }
+
+    private void destroyContainer(String containerId) {
+        if (containerId != null) {
+            containerManager.stopContainer(containerId);
+            containerManager.removeContainer(containerId);
+        }
+    }
+
+    private static void log(String message) {
+        StackTraceElement frame = Thread.currentThread().getStackTrace()[2];
+        System.out.println("[" + frame.getFileName() + ":" + frame.getLineNumber() + "] " + message);
+    }
+
+    private static void logError(String message, Throwable throwable) {
+        StackTraceElement frame = Thread.currentThread().getStackTrace()[2];
+        System.err.println("[" + frame.getFileName() + ":" + frame.getLineNumber() + "] [ERROR] " + message);
+        if (throwable != null) {
+            throwable.printStackTrace(System.err);
+        }
     }
 }
-

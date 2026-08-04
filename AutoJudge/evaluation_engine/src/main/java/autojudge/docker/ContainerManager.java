@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
@@ -29,11 +30,20 @@ class ContainerManager {
         this.client = otherClient;
     }
 
+    private static final int MAX_STREAM_BYTES = 1_000_000;
+
     public String createInstance(ContainerConfig config) throws DockerException {
         HostConfig hostConfig = new HostConfig();
         if (config.memoryLimitBytes() > 0) {
             hostConfig = hostConfig.withMemory(config.memoryLimitBytes());
         }
+        if (config.networkMode() != null && !config.networkMode().isBlank()) {
+            hostConfig = hostConfig.withNetworkMode(config.networkMode());
+        }
+        if (config.cpuLimit() > 0) {
+            hostConfig = hostConfig.withNanoCPUs((long) (config.cpuLimit() * 1_000_000_000L));
+        }
+        hostConfig = hostConfig.withPidsLimit(100L);
         if (config.autoRemove()) {
             hostConfig = hostConfig.withAutoRemove(true);
         }
@@ -166,10 +176,14 @@ class ContainerManager {
     }
 
     public ExecCMD exec(String id, List<String> command) throws DockerException {
-        return execInDir(id, command, null);
+        return execInDir(id, command, null, 60);
     }
 
     public ExecCMD execInDir(String id, List<String> command, String workingDir) throws DockerException {
+        return execInDir(id, command, workingDir, 60);
+    }
+
+    public ExecCMD execInDir(String id, List<String> command, String workingDir, long timeoutSeconds) throws DockerException {
         ExecCreateCmd execCmd = client.execCreateCmd(id)
                 .withAttachStderr(true)
                 .withAttachStdout(true)
@@ -183,24 +197,42 @@ class ContainerManager {
 
         ByteArrayOutputStream stdout = new ByteArrayOutputStream();
         ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+        boolean[] truncated = new boolean[1];
 
         ResultCallback.Adapter<Frame> resultCallback = new ResultCallback.Adapter<Frame>() {
             @Override
             public void onNext(Frame frame) {
-                if (frame != null) {
+                if (frame != null && frame.getPayload() != null) {
                     try {
+                        byte[] payload = frame.getPayload();
                         switch (frame.getStreamType()) {
                             case STDOUT:
                             case RAW:
-                                stdout.write(frame.getPayload());
+                                if (stdout.size() < MAX_STREAM_BYTES) {
+                                    int toWrite = Math.min(payload.length, MAX_STREAM_BYTES - stdout.size());
+                                    stdout.write(payload, 0, toWrite);
+                                    if (toWrite < payload.length) {
+                                        truncated[0] = true;
+                                    }
+                                } else {
+                                    truncated[0] = true;
+                                }
                                 break;
                             case STDERR:
-                                stderr.write(frame.getPayload());
+                                if (stderr.size() < MAX_STREAM_BYTES) {
+                                    int toWrite = Math.min(payload.length, MAX_STREAM_BYTES - stderr.size());
+                                    stderr.write(payload, 0, toWrite);
+                                    if (toWrite < payload.length) {
+                                        truncated[0] = true;
+                                    }
+                                } else {
+                                    truncated[0] = true;
+                                }
                                 break;
                             default:
                                 break;
                         }
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         onError(e);
                     }
                 }
@@ -208,9 +240,15 @@ class ContainerManager {
         };
 
         try {
-            client.execStartCmd(response.getId())
+            long safetyNetTimeout = timeoutSeconds > 0 ? timeoutSeconds + 5 : 65;
+            boolean completed = client.execStartCmd(response.getId())
                     .exec(resultCallback)
-                    .awaitCompletion();
+                    .awaitCompletion(safetyNetTimeout, TimeUnit.SECONDS);
+
+            if (!completed) {
+                kill(id);
+                throw new DockerException("Command execution safety-net timed out after " + safetyNetTimeout + " seconds inside container " + id);
+            }
 
             InspectExecResponse inspectResponse = client.inspectExecCmd(response.getId()).exec();
             Long exitCode = inspectResponse.getExitCodeLong();
@@ -218,13 +256,16 @@ class ContainerManager {
             return new ExecCMD(
                     exitCode != null ? exitCode.intValue() : -1,
                     stdout.toString(StandardCharsets.UTF_8),
-                    stderr.toString(StandardCharsets.UTF_8));
+                    stderr.toString(StandardCharsets.UTF_8),
+                    truncated[0]);
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new DockerException(
                     "Interrupted while waiting for command to finish.",
                     e);
+        } catch (DockerException e) {
+            throw e;
         } catch (Exception e) {
             throw new DockerException(
                     "Failed to execute command inside container " + id,

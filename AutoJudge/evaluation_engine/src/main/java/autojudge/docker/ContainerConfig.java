@@ -23,6 +23,10 @@ public record ContainerConfig(
         this(image, memoryLimitMb, cpuLimit, networkMode, workingDirectory, autoRemove, 5000L);
     }
 
+    public static ContainerConfig from(Assignment assignment) {
+        return from(assignment, DockerConstants.DEFAULT_IMAGE, DockerConstants.DEFAULT_NETWORK_MODE);
+    }
+
     public static ContainerConfig from(Assignment assignment, String image) {
         return from(assignment, image, DockerConstants.DEFAULT_NETWORK_MODE);
     }
@@ -35,23 +39,37 @@ public record ContainerConfig(
             timeLimit = 5000L;
         }
 
+        long memoryMb = assignment != null && assignment.resourceLimits() != null
+                ? assignment.resourceLimits().memoryLimitMb()
+                : 256L;
+
+        double cpuLimit = assignment != null && assignment.resourceLimits() != null
+                ? assignment.resourceLimits().cpuLimit()
+                : 1.0;
+
+        String workDir = assignment != null && assignment.executionProfile() != null
+                ? assignment.executionProfile().workingDirectory()
+                : "/workspace";
+
+        boolean autoRemove = assignment != null && assignment.executionProfile() != null
+                && assignment.executionProfile().autoRemove();
+
         return new ContainerConfig(
-            image,
-            assignment != null && assignment.resourceLimits() != null ? assignment.resourceLimits().memoryLimitMb() : 256,
-            assignment != null && assignment.resourceLimits() != null ? assignment.resourceLimits().cpuLimit() : 1.0,
+            image != null ? image : DockerConstants.DEFAULT_IMAGE,
+            memoryMb,
+            cpuLimit,
             networkMode,
-            assignment != null && assignment.executionProfile() != null ? assignment.executionProfile().workingDirectory() : "/workspace",
-            assignment != null && assignment.executionProfile() != null ? assignment.executionProfile().autoRemove() : true,
+            workDir,
+            autoRemove,
             timeLimit
         );
-    }
-
-    public long timeLimitSeconds() {
-        return Math.max(1, (timeLimitMs + 999) / 1000);
     }
 
     public long memoryLimitBytes() {
         return memoryLimitMb * DockerConstants.BYTES_PER_MEGABYTE;
     }
-}
 
+    public long timeLimitSeconds() {
+        return Math.max(1L, (long) Math.ceil(timeLimitMs / 1000.0));
+    }
+}
