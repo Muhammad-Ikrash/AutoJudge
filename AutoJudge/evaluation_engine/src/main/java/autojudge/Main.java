@@ -1,5 +1,6 @@
 package autojudge;
 
+import autojudge.compiler.Language;
 import autojudge.docker.ContainerConfig;
 import autojudge.docker.DockerRunner;
 import autojudge.grading.GradingService;
@@ -7,7 +8,6 @@ import autojudge.loader.AssignmentLoader;
 import autojudge.loader.SubmissionLoader;
 import autojudge.model.Assignment;
 import autojudge.model.ExecutionResult;
-import autojudge.model.Language;
 import autojudge.model.Submission;
 import autojudge.model.SubmissionResult;
 import autojudge.model.TestCase;
@@ -174,15 +174,7 @@ public final class Main {
         return weights;
     }
 
-    private static Language resolveLanguage(String languageValue) {
-        String normalized = languageValue == null ? "" : languageValue.trim().toLowerCase();
-        return switch (normalized) {
-            case "cpp", "c++", "cxx", "cc" -> Language.CPP;
-            case "java" -> Language.JAVA;
-            case "python", "py", "python3" -> Language.PYTHON;
-            default -> throw new IllegalArgumentException("Unsupported language: " + languageValue);
-        };
-    }
+
 
     private static String resolveImage(Language language) {
         return switch (language) {

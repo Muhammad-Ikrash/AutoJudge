@@ -17,6 +17,7 @@
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/loader/ConfigLoader.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/loader/SubmissionLoader.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/model/Assignment.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/model/ExecCMD.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/model/ExecutionResult.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/model/Language.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/model/Submission.java

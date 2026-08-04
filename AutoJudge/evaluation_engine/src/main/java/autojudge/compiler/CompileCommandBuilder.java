@@ -1,58 +1,77 @@
 package autojudge.compiler;
 
-import autojudge.model.Language;
-
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CompileCommandBuilder {
+import autojudge.model.Submission;
+public final class CompileCommandBuilder {
 
-	public List<String> buildCommand(
-		Language language,
-		List<Path> sourceFiles,
-		Path outputDirectory,
-		String outputName
-	) {
-		return switch (language) {
-			case CPP -> buildCppCommand(sourceFiles, outputDirectory, outputName);
-			case JAVA -> buildJavaCommand(sourceFiles, outputDirectory);
-			case PYTHON -> buildPythonCommand(sourceFiles, outputDirectory);
+	private CompileCommandBuilder() {
+	}
+
+	public static List<String> buildCommand(SubmissionLayout layout) throws IOException {
+
+		return switch (layout.language()) {
+
+			case CPP -> buildCppCommand(layout);
+
+			case C -> buildCCommand(layout);
+
+			case PYTHON -> buildPythonCommand(layout);
+			
+			case JAVA -> List.of();
+			// case JAVA -> buildJavaCommand(layout);				// commented as java is not allowed and will never be returned from Submission Scanner
 		};
+
 	}
 
-	private List<String> buildCppCommand(List<Path> sourceFiles, Path outputDirectory, String outputName) {
+	
+
+	private static List<String> buildPythonCommand(SubmissionLayout layout) {
+    	return List.of();
+	}
+
+	private static List<String> buildCCommand(SubmissionLayout layout) {
+
 		List<String> command = new ArrayList<>();
-		command.add("g++");
-		command.add("-std=c++17");
+
+		command.add("gcc");
+		command.add("-std=c17");
 		command.add("-O2");
+		command.add("-Wall");
+
+		layout.sourceFiles()
+				.stream()
+				.map(Path::toString)
+				.forEach(command::add);
+
 		command.add("-o");
-		command.add(outputDirectory.resolve(outputName).toString());
-		for (Path sourceFile : sourceFiles) {
-			command.add(sourceFile.toString());
-		}
+		command.add("solution");
+
 		return command;
 	}
 
-	private List<String> buildJavaCommand(List<Path> sourceFiles, Path outputDirectory) {
+	private static List<String> buildCppCommand(
+			SubmissionLayout layout) {
+
 		List<String> command = new ArrayList<>();
-		command.add("javac");
-		command.add("-d");
-		command.add(outputDirectory.toString());
-		for (Path sourceFile : sourceFiles) {
-			command.add(sourceFile.toString());
-		}
+
+		command.add("g++");
+		command.add("-std=c++20");
+		command.add("-O2");
+		command.add("-Wall");
+
+		layout.sourceFiles()
+				.stream()
+				.map(Path::toString)
+				.forEach(command::add);
+
+		command.add("-o");
+		command.add("solution");
+
 		return command;
 	}
 
-	private List<String> buildPythonCommand(List<Path> sourceFiles, Path outputDirectory) {
-		List<String> command = new ArrayList<>();
-		command.add("python3");
-		command.add("-m");
-		command.add("py_compile");
-		for (Path sourceFile : sourceFiles) {
-			command.add(sourceFile.toString());
-		}
-		return command;
-	}
 }
