@@ -18,7 +18,7 @@ Instead of manually downloading submissions and checking outputs, AutoJudge aims
 
 ---
 
-Current Progress : Scraped GCR using Google API for Classroom and Drive
+Current Progress : Milestone 2 Completed (Will be refactoring it but it's fully working)
 
 ---
 
@@ -66,12 +66,11 @@ Angular Dashboard
 ```
 AutoJudge/
 │
-├── collector/
-├── grader/
-├── sandbox/
+├── classroom_Scraper/
+├── evaluation_engine/
 ├── backend/
 ├── frontend/
-├── downloads/
+├── Assignments/
 └── README.md
 ```
 
@@ -79,7 +78,6 @@ AutoJudge/
 
 ## Future Features
 
-- Partial marking
 - Multiple programming language support
 - Parallel grading
 - Plagiarism detection
