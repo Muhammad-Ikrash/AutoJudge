@@ -30,7 +30,7 @@ class ContainerManager {
         this.client = otherClient;
     }
 
-    private static final int MAX_STREAM_BYTES = 1_000_000;
+    private static final int MAX_STREAM_BYTES = 1_000_000_000;
 
     public String createInstance(ContainerConfig config) throws DockerException {
         HostConfig hostConfig = new HostConfig();

@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 
 public final class DockerRunner {
 
-    private static final int MAX_OUTPUT_LENGTH = 1_000_000;
     private final ContainerManager containerManager;
 
     public DockerRunner() {
@@ -38,16 +37,18 @@ public final class DockerRunner {
     ) {
         String containerId = null;
         try {
-            log("Step 1: Provisioning & starting Docker container for student: " + submission.studentId());
+            log("Step 1: Scanning submission layout before container allocation");
+            SubmissionLayout layout = SubmissionScanner.scan(submission.getSubmissionRoot());
+
+            log("Step 2: Provisioning & starting Docker container for student: " + submission.studentId());
             containerId = createAndStartContainer(config);
             log("Container started successfully. ID: " + containerId);
 
-            log("Step 2: Copying submission source files into container");
+            log("Step 3: Copying submission source files into container");
             String submissionDir = copySubmissionToContainer(containerId, config, submission);
             log("Submission copied to container path: " + submissionDir);
 
-            log("Step 3: Scanning layout and compiling submission inside container");
-            SubmissionLayout layout = SubmissionScanner.scan(submission.getSubmissionRoot());
+            log("Step 4: Compiling submission inside container");
             ExecCMD compileResult = compileSubmission(containerId, submissionDir, layout);
             if (isCompileFailed(compileResult)) {
                 log("Compilation failed with exit code " + compileResult.getExitCode());
@@ -55,14 +56,14 @@ public final class DockerRunner {
             }
             log("Compilation succeeded");
 
-            log("Step 4: Executing " + testCases.size() + " test cases");
+            log("Step 5: Executing " + testCases.size() + " test cases");
             return executeAllTestCases(containerId, submissionDir, layout, testCases, config.timeLimitSeconds());
 
         } catch (Exception e) {
             logError("Execution failed due to exception: " + e.getMessage(), e);
             return buildInternalErrorResults(testCases, e);
         } finally {
-            log("Step 5: Cleaning up container resources");
+            log("Step 6: Cleaning up container resources");
             destroyContainer(containerId);
         }
     }
@@ -102,7 +103,9 @@ public final class DockerRunner {
             return new ExecCMD(0, "", "");
         }
 
-        String compileScript = "timeout -k 1s 30s " + String.join(" ", rawCompileCommand);
+        String compileScript = "timeout -k " + DockerConstants.SIGKILL_GRACE_PERIOD + " " 
+                + DockerConstants.DEFAULT_COMPILE_TIMEOUT_SEC + "s " 
+                + String.join(" ", rawCompileCommand);
         return containerManager.execInDir(containerId, List.of("sh", "-c", compileScript), submissionDir);
     }
 
@@ -179,7 +182,9 @@ public final class DockerRunner {
         Set<String> filesBeforeExec = new HashSet<>(containerManager.listFiles(containerId, submissionDir));
         long startTime = System.currentTimeMillis();
 
-        String runnerScript = "timeout -k 1s " + timeLimitSec + "s " + ExecutionCommandBuilder.buildExecutionCommand(layout, inputFileName);
+        String runnerScript = "timeout -k " + DockerConstants.SIGKILL_GRACE_PERIOD + " " 
+                + timeLimitSec + "s " 
+                + ExecutionCommandBuilder.buildExecutionCommand(layout, inputFileName);
         ExecCMD execResult = containerManager.execInDir(
                 containerId, List.of("sh", "-c", runnerScript), submissionDir, timeLimitSec
         );
@@ -201,7 +206,7 @@ public final class DockerRunner {
             );
         }
 
-        containerManager.removeFile(containerId, testCaseContainerPath);
+        cleanupTestcaseFile(containerId, testCaseContainerPath);
         return evaluateExecutionResult(containerId, testCase, execResult, executionTime);
     }
 
@@ -243,11 +248,17 @@ public final class DockerRunner {
     ) {
         String stdout = execResult.getStdout() != null ? execResult.getStdout() : "";
         String stderr = execResult.getStderr() != null ? execResult.getStderr() : "";
-        boolean outputExceeded = execResult.isTruncated() || stdout.length() > MAX_OUTPUT_LENGTH || stderr.length() > MAX_OUTPUT_LENGTH;
+        boolean outputExceeded = execResult.isTruncated() 
+                || stdout.length() > DockerConstants.MAX_OUTPUT_BYTES 
+                || stderr.length() > DockerConstants.MAX_OUTPUT_BYTES;
 
         if (outputExceeded) {
-            if (stdout.length() > MAX_OUTPUT_LENGTH) stdout = stdout.substring(0, MAX_OUTPUT_LENGTH) + "\n[Output truncated]";
-            if (stderr.length() > MAX_OUTPUT_LENGTH) stderr = stderr.substring(0, MAX_OUTPUT_LENGTH) + "\n[Output truncated]";
+            if (stdout.length() > DockerConstants.MAX_OUTPUT_BYTES) {
+                stdout = stdout.substring(0, DockerConstants.MAX_OUTPUT_BYTES) + "\n[Output truncated]";
+            }
+            if (stderr.length() > DockerConstants.MAX_OUTPUT_BYTES) {
+                stderr = stderr.substring(0, DockerConstants.MAX_OUTPUT_BYTES) + "\n[Output truncated]";
+            }
         }
 
         Verdict verdict = determineVerdict(containerId, execResult.getExitCode(), outputExceeded);
@@ -321,6 +332,10 @@ public final class DockerRunner {
             }
         }
         return results;
+    }
+
+    private void cleanupTestcaseFile(String containerId, String testCaseContainerPath) {
+        containerManager.removeFile(containerId, testCaseContainerPath);
     }
 
     private void destroyContainer(String containerId) {
