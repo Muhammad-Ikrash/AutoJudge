@@ -1,5 +1,7 @@
 package autojudge.compiler;
 
+import autojudge.model.SubmissionLayout;
+
 public final class ExecutionCommandBuilder {
 
     private ExecutionCommandBuilder() {

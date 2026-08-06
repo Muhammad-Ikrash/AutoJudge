@@ -1,4 +1,4 @@
-package autojudge.docker;
+package autojudge.config;
 
 import autojudge.model.Assignment;
 

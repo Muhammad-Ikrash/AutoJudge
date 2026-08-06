@@ -1,4 +1,4 @@
-package autojudge.docker;
+package autojudge.config;
 
 public final class DockerConstants {
 

@@ -1,6 +1,6 @@
 package autojudge;
 
-import autojudge.docker.ContainerConfig;
+import autojudge.config.ContainerConfig;
 import autojudge.docker.DockerRunner;
 import autojudge.grading.GradingService;
 import autojudge.loader.AssignmentLoader;

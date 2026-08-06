@@ -1,4 +1,4 @@
-package autojudge.compiler;
+package autojudge.config;
 
 public enum Language {
 	CPP,

@@ -19,6 +19,7 @@ import com.github.dockerjava.api.command.InspectExecResponse;
 import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
 
+import autojudge.config.ContainerConfig;
 import autojudge.exception.DockerException;
 import autojudge.model.ExecCMD;
 

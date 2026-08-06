@@ -5,6 +5,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import autojudge.model.SubmissionLayout;
+
 public final class CompileCommandBuilder {
 
     private CompileCommandBuilder() {

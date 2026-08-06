@@ -2,11 +2,13 @@ package autojudge.docker;
 
 import autojudge.compiler.CompileCommandBuilder;
 import autojudge.compiler.ExecutionCommandBuilder;
-import autojudge.compiler.SubmissionLayout;
 import autojudge.compiler.SubmissionScanner;
+import autojudge.config.ContainerConfig;
+import autojudge.config.DockerConstants;
 import autojudge.model.ExecCMD;
 import autojudge.model.ExecutionResult;
 import autojudge.model.Submission;
+import autojudge.model.SubmissionLayout;
 import autojudge.model.TestCase;
 import autojudge.model.Verdict;
 
@@ -37,33 +39,22 @@ public final class DockerRunner {
     ) {
         String containerId = null;
         try {
-            log("Step 1: Scanning submission layout before container allocation");
             SubmissionLayout layout = SubmissionScanner.scan(submission.getSubmissionRoot());
 
-            log("Step 2: Provisioning & starting Docker container for student: " + submission.studentId());
             containerId = createAndStartContainer(config);
-            log("Container started successfully. ID: " + containerId);
 
-            log("Step 3: Copying submission source files into container");
             String submissionDir = copySubmissionToContainer(containerId, config, submission);
-            log("Submission copied to container path: " + submissionDir);
 
-            log("Step 4: Compiling submission inside container");
             ExecCMD compileResult = compileSubmission(containerId, submissionDir, layout);
             if (isCompileFailed(compileResult)) {
-                log("Compilation failed with exit code " + compileResult.getExitCode());
                 return buildCompilationErrorResults(testCases, compileResult);
             }
-            log("Compilation succeeded");
 
-            log("Step 5: Executing " + testCases.size() + " test cases");
             return executeAllTestCases(containerId, submissionDir, layout, testCases, config.timeLimitSeconds());
 
         } catch (Exception e) {
-            logError("Execution failed due to exception: " + e.getMessage(), e);
             return buildInternalErrorResults(testCases, e);
         } finally {
-            log("Step 6: Cleaning up container resources");
             destroyContainer(containerId);
         }
     }
@@ -150,14 +141,11 @@ public final class DockerRunner {
             TestCase testCase = testCases.get(i);
             if (testCase == null) continue;
 
-            log("Executing Test Case: " + testCase.id());
             ExecutionResult result = executeSingleTestCase(containerId, submissionDir, layout, testCase, timeLimitSec);
-            log("Test Case " + testCase.id() + " finished -> Verdict: " + result.verdict() + " [ExitCode: " + result.exitCode() + ", Time: " + result.executionTime() + "ms]");
 
             results.add(result);
 
             if (result.verdict() == Verdict.MALICIOUS_CODE) {
-                log("Malicious code detected! Destroying container immediately.");
                 destroyContainer(containerId);
                 appendMaliciousCodeAbortionResults(results, testCases, i + 1);
                 break;
@@ -345,16 +333,5 @@ public final class DockerRunner {
         }
     }
 
-    private static void log(String message) {
-        StackTraceElement frame = Thread.currentThread().getStackTrace()[2];
-        System.out.println("[" + frame.getFileName() + ":" + frame.getLineNumber() + "] " + message);
-    }
-
-    private static void logError(String message, Throwable throwable) {
-        StackTraceElement frame = Thread.currentThread().getStackTrace()[2];
-        System.err.println("[" + frame.getFileName() + ":" + frame.getLineNumber() + "] [ERROR] " + message);
-        if (throwable != null) {
-            throwable.printStackTrace(System.err);
-        }
-    }
+    
 }
