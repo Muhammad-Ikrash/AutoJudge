@@ -1,10 +1,9 @@
 *.json
 CourseFiles
-test*
+
 git 
 *target*
-*test*
 AutoJudge/evaluation_engine/target
-AutoJudge/evaluation_engine/src/test
+
 tickets.md
 *review.md
