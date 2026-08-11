@@ -7,12 +7,17 @@ import autojudge.model.TestCase;
 import autojudge.model.Verdict;
 import autojudge.util.FileUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public final class GradingService {
+
+    private static final Logger log = LoggerFactory.getLogger(GradingService.class);
 
     private final OutputComparator outputComparator;
     private final ScoreCalculator scoreCalculator;
@@ -21,7 +26,7 @@ public final class GradingService {
         this(new OutputComparator(), new ScoreCalculator());
     }
 
-    GradingService(OutputComparator outputComparator, ScoreCalculator scoreCalculator) {
+    public GradingService(OutputComparator outputComparator, ScoreCalculator scoreCalculator) {
         this.outputComparator = outputComparator;
         this.scoreCalculator = scoreCalculator;
     }
@@ -124,20 +129,7 @@ public final class GradingService {
     }
 
     private Verdict resolveWorseVerdict(Verdict current, Verdict candidate) {
-        return getSeverityRank(candidate) > getSeverityRank(current) ? candidate : current;
-    }
-
-    private int getSeverityRank(Verdict verdict) {
-        return switch (verdict) {
-            case ACCEPTED -> 0;
-            case WRONG_ANSWER -> 1;
-            case RUNTIME_ERROR -> 2;
-            case TIME_LIMIT_EXCEEDED -> 3;
-            case MEMORY_LIMIT_EXCEEDED -> 4;
-            case COMPILATION_ERROR -> 5;
-            case INTERNAL_ERROR -> 6;
-            case MALICIOUS_CODE -> 7;
-        };
+        return candidate.isMoreSevereThan(current) ? candidate : current;
     }
 
     private SubmissionResult buildSubmissionResult(

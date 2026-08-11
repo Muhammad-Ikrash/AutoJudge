@@ -1,20 +1,34 @@
+"""
+Google Classroom & Drive submission attachments downloader.
+"""
+
 import io
+import logging
 import os
 import re
 import sys
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
+from googleapiclient.discovery import Resource, build
 from googleapiclient.http import MediaIoBaseDownload
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 os.environ["OAUTHLIB_RELAX_TOKEN_SCOPE"] = "1"
 
 CREDENTIALS_FILE = "credentials.json"
 TOKEN_FILE = "token.json"
-DOWNLOAD_ROOT = "./CourseFiles"
+DEFAULT_DOWNLOAD_ROOT = "./CourseFiles"
 
-GOOGLE_EXPORT_MIME_MAP = {
+GOOGLE_EXPORT_MIME_MAP: Dict[str, Tuple[str, str]] = {
     "application/vnd.google-apps.document": (
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         ".docx",
@@ -29,7 +43,7 @@ GOOGLE_EXPORT_MIME_MAP = {
     ),
 }
 
-SCOPES = [
+SCOPES: List[str] = [
     "https://www.googleapis.com/auth/classroom.courses.readonly",
     "https://www.googleapis.com/auth/classroom.coursework.students.readonly",
     "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly",
@@ -39,8 +53,12 @@ SCOPES = [
 ]
 
 
-def authenticate():
-    """Handles the Login Process and returns authenticated Classroom + Drive services."""
+def authenticate() -> Tuple[Resource, Resource]:
+    """Authenticates the user and returns Google Classroom and Drive service instances.
+
+    Returns:
+        Tuple[Resource, Resource]: (classroom_service, drive_service)
+    """
     creds = None
 
     if os.path.exists(TOKEN_FILE):
@@ -51,14 +69,12 @@ def authenticate():
             creds.refresh(Request())
         else:
             if not os.path.exists(CREDENTIALS_FILE):
-                sys.exit(
-                    f"ERROR: '{CREDENTIALS_FILE}' not found. Put your OAuth "
-                    f"credentials.json in this folder and try again."
-                )
+                logger.error("'%s' not found. Please place credentials.json in this directory.", CREDENTIALS_FILE)
+                sys.exit(1)
             flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
             creds = flow.run_local_server(port=0)
 
-        with open(TOKEN_FILE, "w") as token:
+        with open(TOKEN_FILE, "w", encoding="utf-8") as token:
             token.write(creds.to_json())
 
     classroom_service = build("classroom", "v1", credentials=creds)
@@ -66,55 +82,92 @@ def authenticate():
     return classroom_service, drive_service
 
 
+def sanitize(name: Optional[str]) -> str:
+    """Sanitizes strings for safe filesystem usage.
 
-################################################################
-# Just Helping FUnctions, Will be chagned later                #
-################################################################
-def sanitize(name: str) -> str:
-    """replaces unsupported characters to _ """
+    Args:
+        name: Raw input string or filename
+
+    Returns:
+        str: Sanitized filename safe for disk storage
+    """
     if not name:
         return "unnamed"
-    name = re.sub(r'[<>:"/\\|?*]', "_", name).strip()
-    return name[:150] if name else "unnamed"
+    sanitized = re.sub(r'[<>:"/\\|?*]', "_", name).strip()
+    sanitized = os.path.basename(sanitized)
+    return sanitized[:150] if sanitized else "unnamed"
 
 
-def prompt_select(items, label_fn, prompt_text):
-    """idk man, AI gave this function to display the result better"""
+def prompt_select(items: List[Any], label_fn: Callable[[Any], str], prompt_text: str) -> Any:
+    """Displays a numbered menu for the user to select an item.
+
+    Args:
+        items: List of items to select from
+        label_fn: Function mapping an item to a string representation
+        prompt_text: Name of the resource being selected
+
+    Returns:
+        Selected item from the list
+    """
     if not items:
-        sys.exit(f"No {prompt_text} found. Nothing to do.")
+        logger.warning("No %s found.", prompt_text)
+        sys.exit(1)
 
+    print(f"\nSelect a {prompt_text}:")
     for i, item in enumerate(items, start=1):
         print(f"  [{i}] {label_fn(item)}")
 
     while True:
-        choice = input(f"\nSelect a {prompt_text} (number): ").strip()
+        choice = input(f"\nEnter choice (1-{len(items)}): ").strip()
         if choice.isdigit() and 1 <= int(choice) <= len(items):
             return items[int(choice) - 1]
-        print("Invalid choice, try again.")
+        print("Invalid choice, please try again.")
 
 
+def get_student_display_name(
+    classroom_service: Resource,
+    course_id: str,
+    user_id: str,
+    name_cache: Dict[str, str]
+) -> str:
+    """Resolves a Classroom user ID to a human-readable name, caching results.
 
-def get_student_display_name(classroom_service, course_id, user_id, name_cache):
-    """Resolves a userId to a human-readable name, with caching. ( AI also gave me this function )"""
+    Args:
+        classroom_service: Authenticated Google Classroom service
+        course_id: Unique course ID
+        user_id: Unique user ID
+        name_cache: Dictionary cache for user ID to name mappings
+
+    Returns:
+        str: Full name of student or raw user ID as fallback
+    """
+    if not user_id:
+        return "unknown_student"
+
     if user_id in name_cache:
         return name_cache[user_id]
 
     try:
         profile = classroom_service.userProfiles().get(userId=user_id).execute()
         full_name = profile.get("name", {}).get("fullName", user_id)
-    except Exception:
-        full_name = user_id  # fall back to the raw ID if lookup fails
+    except Exception as e:
+        logger.warning("Could not resolve display name for user_id '%s': %s", user_id, e)
+        full_name = user_id
 
     name_cache[user_id] = full_name
     return full_name
 
 
-################################################################
-# Main Functioning Methods                                     #
-################################################################
-def list_courses(classroom_service):
-    """Lists all the courses you are added to as a teacher """
-    courses = []
+def list_courses(classroom_service: Resource) -> List[Dict[str, Any]]:
+    """Lists all active courses where the authenticated user is a teacher.
+
+    Args:
+        classroom_service: Authenticated Google Classroom service
+
+    Returns:
+        List of active course dictionaries
+    """
+    courses: List[Dict[str, Any]] = []
     page_token = None
     while True:
         response = (
@@ -128,9 +181,18 @@ def list_courses(classroom_service):
             break
     return courses
 
-def list_coursework(classroom_service, course_id):
-    """Lists all assignments (coursework) for a given course."""
-    coursework = []
+
+def list_coursework(classroom_service: Resource, course_id: str) -> List[Dict[str, Any]]:
+    """Lists coursework/assignments for a course.
+
+    Args:
+        classroom_service: Authenticated Google Classroom service
+        course_id: Unique course ID
+
+    Returns:
+        List of coursework dictionaries
+    """
+    coursework: List[Dict[str, Any]] = []
     page_token = None
     while True:
         response = (
@@ -138,7 +200,7 @@ def list_coursework(classroom_service, course_id):
             .courseWork()
             .list(
                 courseId=course_id,
-                courseWorkStates=["PUBLISHED", "DRAFT"],        # remove this to allow only published ones
+                courseWorkStates=["PUBLISHED", "DRAFT"],
                 pageToken=page_token,
             )
             .execute()
@@ -150,9 +212,18 @@ def list_coursework(classroom_service, course_id):
     return coursework
 
 
-def list_submissions(classroom_service, course_id, coursework_id):
-    """Lists all student submissions for a given assignment."""
-    submissions = []
+def list_submissions(classroom_service: Resource, course_id: str, coursework_id: str) -> List[Dict[str, Any]]:
+    """Lists all student submissions for a given assignment.
+
+    Args:
+        classroom_service: Authenticated Google Classroom service
+        course_id: Unique course ID
+        coursework_id: Unique coursework ID
+
+    Returns:
+        List of submission dictionaries
+    """
+    submissions: List[Dict[str, Any]] = []
     page_token = None
     while True:
         response = (
@@ -160,9 +231,9 @@ def list_submissions(classroom_service, course_id, coursework_id):
             .courseWork()
             .studentSubmissions()
             .list(
-                courseId=course_id, 
-                courseWorkId=coursework_id, 
-                pageToken=page_token
+                courseId=course_id,
+                courseWorkId=coursework_id,
+                pageToken=page_token,
             )
             .execute()
         )
@@ -173,25 +244,38 @@ def list_submissions(classroom_service, course_id, coursework_id):
     return submissions
 
 
+def download_drive_file(
+    drive_service: Resource,
+    file_id: str,
+    dest_path: str,
+    export_mime_map: Optional[Dict[str, Tuple[str, str]]] = None
+) -> str:
+    """Downloads a single Google Drive file or exports a Google Doc.
 
-################################################################
-# Downloading Files Method                                     #
-################################################################
+    Args:
+        drive_service: Authenticated Google Drive service
+        file_id: Drive file ID
+        dest_path: Target destination path on disk
+        export_mime_map: Optional custom export MIME map
 
-def download_drive_file(drive_service, file_id, dest_path):
-    """Downloads a single Drive file."""
+    Returns:
+        str: Absolute path of downloaded file
+    """
+    if export_mime_map is None:
+        export_mime_map = GOOGLE_EXPORT_MIME_MAP
+
     file_meta = drive_service.files().get(fileId=file_id, fields="name,mimeType").execute()
     mime_type = file_meta.get("mimeType", "")
 
-    if mime_type in GOOGLE_EXPORT_MIME_MAP:
-        export_mime, extension = GOOGLE_EXPORT_MIME_MAP[mime_type]
+    if mime_type in export_mime_map:
+        export_mime, extension = export_mime_map[mime_type]
         if not dest_path.endswith(extension):
             dest_path += extension
         request = drive_service.files().export_media(fileId=file_id, mimeType=export_mime)
     else:
         request = drive_service.files().get_media(fileId=file_id)
 
-    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+    os.makedirs(os.path.dirname(os.path.abspath(dest_path)), exist_ok=True)
     with io.FileIO(dest_path, "wb") as fh:
         downloader = MediaIoBaseDownload(fh, request)
         done = False
@@ -201,12 +285,27 @@ def download_drive_file(drive_service, file_id, dest_path):
     return dest_path
 
 
-def download_submission_attachments(drive_service, submission, dest_folder):
-    """Downloads every driveFile attachment on a single student submission."""
-    attachments = submission.get("assignmentSubmission", {}).get("attachments", [])
+def download_submission_attachments(
+    drive_service: Resource,
+    submission: Dict[str, Any],
+    dest_folder: str
+) -> int:
+    """Downloads all Drive file attachments and saves links for a student submission.
 
+    Args:
+        drive_service: Authenticated Google Drive service
+        submission: Student submission dictionary
+        dest_folder: Target directory to save attachments
+
+    Returns:
+        int: Number of downloaded attachments
+    """
+    attachments = submission.get("assignmentSubmission", {}).get("attachments", [])
     if not attachments:
         return 0
+
+    if not os.path.exists(dest_folder):
+        os.makedirs(dest_folder, exist_ok=True)
 
     downloaded = 0
     for attachment in attachments:
@@ -220,32 +319,30 @@ def download_submission_attachments(drive_service, submission, dest_folder):
             dest_path = os.path.join(dest_folder, title)
             try:
                 saved_path = download_drive_file(drive_service, file_id, dest_path)
-                print(f"      downloaded: {os.path.basename(saved_path)}")
+                logger.info("  Downloaded: %s", os.path.basename(saved_path))
                 downloaded += 1
             except Exception as e:
-                print(f"      FAILED to download {title}: {e}")
+                logger.error("  FAILED to download '%s': %s", title, e)
 
         elif link:
-            os.makedirs(dest_folder, exist_ok=True)
-            with open(os.path.join(dest_folder, "link.txt"), "a") as f:
-                f.write(link.get("url", "") + "\n")
-            print(f"      saved link: {link.get('url')}")
+            link_url = link.get("url", "")
+            with open(os.path.join(dest_folder, "link.txt"), "a", encoding="utf-8") as f:
+                f.write(link_url + "\n")
+            logger.info("  Saved link: %s", link_url)
             downloaded += 1
 
         elif youtube:
-            os.makedirs(dest_folder, exist_ok=True)
-            with open(os.path.join(dest_folder, "youtube_link.txt"), "a") as f:
-                f.write(youtube.get("alternateLink", "") + "\n")
+            yt_url = youtube.get("alternateLink", "")
+            with open(os.path.join(dest_folder, "youtube_link.txt"), "a", encoding="utf-8") as f:
+                f.write(yt_url + "\n")
+            logger.info("  Saved YouTube link: %s", yt_url)
             downloaded += 1
 
     return downloaded
 
-################################################################
-# OOPS                                                         #
-################################################################
 
-def main():
-    
+def main(download_root: str = DEFAULT_DOWNLOAD_ROOT) -> None:
+    """Main CLI entry point for scraping attachments."""
     classroom_service, drive_service = authenticate()
 
     courses = list_courses(classroom_service)
@@ -253,48 +350,46 @@ def main():
     course_id = course["id"]
     course_name = sanitize(course.get("name", course_id))
 
-    # Pick an assignment
-    print(f"\nFetching assignments for '{course['name']}'...")
+    logger.info("Fetching assignments for '%s'...", course.get("name", course_id))
     coursework_list = list_coursework(classroom_service, course_id)
     coursework = prompt_select(
         coursework_list,
-        lambda cw: f"{cw.get('title', 'Untitled assignment')}  [{cw.get('state', 'UNKNOWN')}]",
+        lambda cw: f"{cw.get('title', 'Untitled assignment')} [{cw.get('state', 'UNKNOWN')}]",
         "assignment",
     )
     coursework_id = coursework["id"]
     assignment_name = sanitize(coursework.get("title", coursework_id))
 
-    # Fetch submissions
-    print(f"\nFetching submissions for '{coursework['title']}'...")
+    logger.info("Fetching submissions for '%s'...", coursework.get("title", coursework_id))
     submissions = list_submissions(classroom_service, course_id, coursework_id)
-    print(f"Found {len(submissions)} submission(s).\n")
+    logger.info("Found %d submission(s).", len(submissions))
 
-    assignment_root = os.path.join(DOWNLOAD_ROOT, course_name, assignment_name)
+    assignment_root = os.path.join(download_root, course_name, assignment_name)
     os.makedirs(assignment_root, exist_ok=True)
 
-    name_cache = {}
+    name_cache: Dict[str, str] = {}
     total_files = 0
 
     for i, submission in enumerate(submissions, start=1):
-        user_id = submission.get("userId")
+        user_id = submission.get("userId", "")
         state = submission.get("state", "UNKNOWN")
 
         student_name = get_student_display_name(classroom_service, course_id, user_id, name_cache)
         student_folder_name = sanitize(f"{student_name}_{user_id[:6]}")
         student_folder = os.path.join(assignment_root, student_folder_name)
 
-        print(f"[{i}/{len(submissions)}] {student_name} (state: {state})")
+        logger.info("[%d/%d] %s (state: %s)", i, len(submissions), student_name, state)
 
         if state not in ("TURNED_IN", "RETURNED"):
-            print("      no submission to download, skipping.")
+            logger.info("  No submission to download, skipping.")
             continue
 
         count = download_submission_attachments(drive_service, submission, student_folder)
         if count == 0:
-            print("      no attachments found.")
+            logger.info("  No attachments found.")
         total_files += count
 
-    print(f"\nDone. Downloaded {total_files} file(s)/link(s) into:\n  {os.path.abspath(assignment_root)}")
+    logger.info("Done. Downloaded %d file(s)/link(s) into:\n  %s", total_files, os.path.abspath(assignment_root))
 
 
 if __name__ == "__main__":

@@ -89,27 +89,10 @@ public final class SubmissionScanner {
     }
 
     private static Language detectLanguageFromFileName(String fileName) {
-        if (fileName.endsWith(".cpp") || fileName.endsWith(".cc") || fileName.endsWith(".cxx") || fileName.endsWith(".hpp") || fileName.endsWith(".h")) {
-            return Language.CPP;
-        }
-        if (fileName.endsWith(".c")) {
-            return Language.C;
-        }
-        if (fileName.endsWith(".java")) {
-            return Language.JAVA;
-        }
-        if (fileName.endsWith(".py")) {
-            return Language.PYTHON;
-        }
-        return null;
+        return Language.fromFileName(fileName);
     }
 
     private static boolean isSupportedSourceFile(String fileName) {
-        return fileName.endsWith(".cpp")
-                || fileName.endsWith(".cc")
-                || fileName.endsWith(".cxx")
-                || fileName.endsWith(".c")
-                || fileName.endsWith(".java")
-                || fileName.endsWith(".py");
+        return Language.isSupportedSourceFile(fileName);
     }
 }
