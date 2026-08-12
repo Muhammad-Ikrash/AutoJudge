@@ -19,7 +19,8 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Generates an Excel (.xlsx) report from a collection of SubmissionResult objects.
+ * Pure report formatter converting SubmissionResult lists into styled Excel (.xlsx) files.
+ * Zero RabbitMQ/Docker/grading awareness.
  */
 public class ExcelGenerator {
 
@@ -47,7 +48,7 @@ public class ExcelGenerator {
             headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
             // Create Header Row
-            String[] headers = {"Submission ID", "Student ID", "Assignment ID", "Verdict", "Score (%)", "Passed Tests", "Total Tests"};
+            String[] headers = {"Submission ID", "Student ID", "Assignment ID", "Batch ID", "Verdict", "Score (%)", "Passed Tests", "Total Tests"};
             Row headerRow = sheet.createRow(0);
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = headerRow.createCell(i);
@@ -62,10 +63,11 @@ public class ExcelGenerator {
                 row.createCell(0).setCellValue(result.submissionId() != null ? result.submissionId() : "");
                 row.createCell(1).setCellValue(result.studentId() != null ? result.studentId() : "");
                 row.createCell(2).setCellValue(result.assignmentId() != null ? result.assignmentId() : "");
-                row.createCell(3).setCellValue(result.verdict() != null ? result.verdict().name() : "UNKNOWN");
-                row.createCell(4).setCellValue(result.score());
-                row.createCell(5).setCellValue(result.passedTests());
-                row.createCell(6).setCellValue(result.totalTests());
+                row.createCell(3).setCellValue(result.batchId() != null ? result.batchId() : "");
+                row.createCell(4).setCellValue(result.verdict() != null ? result.verdict().name() : "UNKNOWN");
+                row.createCell(5).setCellValue(result.score());
+                row.createCell(6).setCellValue(result.passedTests());
+                row.createCell(7).setCellValue(result.totalTests());
             }
 
             // Auto-size columns

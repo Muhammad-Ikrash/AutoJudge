@@ -36,8 +36,10 @@ class ExcelGeneratorTest {
             assertEquals(3, sheet.getPhysicalNumberOfRows()); // Header + 2 data rows
             assertEquals("sub-1", sheet.getRow(1).getCell(0).getStringCellValue());
             assertEquals("student-1", sheet.getRow(1).getCell(1).getStringCellValue());
-            assertEquals("ACCEPTED", sheet.getRow(1).getCell(3).getStringCellValue());
-            assertEquals(100.0, sheet.getRow(1).getCell(4).getNumericCellValue());
+            assertEquals("assign-1", sheet.getRow(1).getCell(2).getStringCellValue());
+            assertEquals("default-batch", sheet.getRow(1).getCell(3).getStringCellValue());
+            assertEquals("ACCEPTED", sheet.getRow(1).getCell(4).getStringCellValue());
+            assertEquals(100.0, sheet.getRow(1).getCell(5).getNumericCellValue());
         }
     }
 }

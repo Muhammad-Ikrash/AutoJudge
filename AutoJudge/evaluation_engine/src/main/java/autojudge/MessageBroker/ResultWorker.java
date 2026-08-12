@@ -14,11 +14,13 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Long-running RabbitMQ consumer that listens for SubmissionResults, collects them,
- * and delegates Excel report generation to ExcelGenerator.
+ * Long-running RabbitMQ consumer that collects SubmissionResults grouped by batchId.
+ * Triggers Excel report generation once received count == expected count for a batch.
  */
 public class ResultWorker {
 
@@ -27,7 +29,7 @@ public class ResultWorker {
     private final RabbitMQConnection rabbitMQConnection;
     private final ExcelGenerator excelGenerator;
     private final ObjectMapper objectMapper;
-    private final List<SubmissionResult> collectedResults = Collections.synchronizedList(new ArrayList<>());
+    private final Map<String, List<SubmissionResult>> batchResultsMap = new ConcurrentHashMap<>();
 
     public ResultWorker(RabbitMQConnection rabbitMQConnection, ExcelGenerator excelGenerator) {
         this.rabbitMQConnection = Objects.requireNonNull(rabbitMQConnection, "rabbitMQConnection must not be null");
@@ -35,17 +37,17 @@ public class ResultWorker {
         this.objectMapper = new ObjectMapper();
     }
 
-    public List<SubmissionResult> getCollectedResults() {
-        return new ArrayList<>(collectedResults);
+    public List<SubmissionResult> getCollectedResults(String batchId) {
+        List<SubmissionResult> results = batchResultsMap.get(batchId);
+        return results != null ? new ArrayList<>(results) : Collections.emptyList();
     }
 
-    public void startListening(Path reportOutputPath, int expectedResultCount) throws IOException {
+    public void startListening(Path defaultReportPath, int fallbackExpectedCount) throws IOException {
         try {
             Channel channel = rabbitMQConnection.createChannel();
             channel.basicQos(1);
 
-            log.info("ResultWorker started. Listening on queue '{}' (expected results: {})...",
-                    RabbitMQConnection.RESULT_QUEUE, expectedResultCount);
+            log.info("ResultWorker started. Listening on queue '{}'...", RabbitMQConnection.RESULT_QUEUE);
 
             DeliverCallback deliverCallback = (consumerTag, delivery) -> {
                 long deliveryTag = delivery.getEnvelope().getDeliveryTag();
@@ -53,16 +55,21 @@ public class ResultWorker {
 
                 try {
                     SubmissionResult result = objectMapper.readValue(messageJson, SubmissionResult.class);
-                    log.info("ResultWorker received SubmissionResult: studentId={}, verdict={}, score={}",
-                            result.studentId(), result.verdict(), result.score());
+                    String batchId = result.batchId() != null ? result.batchId() : "default-batch";
+                    int expectedCount = result.totalSubmissionsInBatch() > 0 ? result.totalSubmissionsInBatch() : fallbackExpectedCount;
 
-                    collectedResults.add(result);
+                    log.info("ResultWorker received SubmissionResult for studentId={}, verdict={}, batchId={}",
+                            result.studentId(), result.verdict(), batchId);
+
+                    List<SubmissionResult> batchList = batchResultsMap.computeIfAbsent(batchId, k -> Collections.synchronizedList(new ArrayList<>()));
+                    batchList.add(result);
                     channel.basicAck(deliveryTag, false);
 
-                    if (expectedResultCount > 0 && collectedResults.size() >= expectedResultCount) {
-                        log.info("Collected {}/{} expected results. Generating Excel report at {}",
-                                collectedResults.size(), expectedResultCount, reportOutputPath);
-                        excelGenerator.generateReport(new ArrayList<>(collectedResults), reportOutputPath);
+                    if (expectedCount > 0 && batchList.size() >= expectedCount) {
+                        log.info("Batch '{}' complete ({}/{} results). Generating Excel report at {}",
+                                batchId, batchList.size(), expectedCount, defaultReportPath);
+
+                        excelGenerator.generateReport(new ArrayList<>(batchList), defaultReportPath);
                     }
                 } catch (Exception e) {
                     log.error("Failed to process SubmissionResult tag={}", deliveryTag, e);

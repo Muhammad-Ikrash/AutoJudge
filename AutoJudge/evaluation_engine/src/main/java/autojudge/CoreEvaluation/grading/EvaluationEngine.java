@@ -19,9 +19,9 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Application boundary around the core evaluation engine.
- * Receives an EvaluationJob, resolves the internal assignment structure
- * (input/, expected/, config.json, weights.json), constructs EvaluationContext, and executes grading.
+ * Pure boundary class between RabbitMQ workers and the core evaluator.
+ * Converts an EvaluationJob into an EvaluationContext, executes grading via GradingOrchestrator,
+ * and returns the SubmissionResult. Zero RabbitMQ awareness.
  */
 public class EvaluationEngine {
 
@@ -46,12 +46,12 @@ public class EvaluationEngine {
     }
 
     public SubmissionResult evaluate(EvaluationJob job) throws Exception {
-        log.info("EvaluationEngine processing job: submissionId={}, studentId={}", job.submissionId(), job.studentId());
+        log.info("EvaluationEngine processing job: submissionId={}, studentId={}, batchId={}",
+                job.submissionId(), job.studentId(), job.batchId());
 
         Path assignmentPath = Path.of(job.assignmentPath());
         Path submissionPath = Path.of(job.submissionPath());
 
-        // Resolve enforced assignment directory structure
         Path inputDirectory = assignmentPath.resolve("input");
         Path outputDirectory = assignmentPath.resolve("expected");
         Path configFile = assignmentPath.resolve("config.json");
@@ -78,6 +78,20 @@ public class EvaluationEngine {
                 testCases
         );
 
-        return gradingOrchestrator.evaluate(context);
+        SubmissionResult rawResult = gradingOrchestrator.evaluate(context);
+
+        // Attach batch metadata to SubmissionResult
+        return new SubmissionResult(
+                rawResult.submissionId(),
+                rawResult.assignmentId(),
+                rawResult.studentId(),
+                rawResult.score(),
+                rawResult.verdict(),
+                rawResult.passedTests(),
+                rawResult.totalTests(),
+                rawResult.testCasesResults(),
+                job.batchId(),
+                job.totalSubmissionsInBatch()
+        );
     }
 }

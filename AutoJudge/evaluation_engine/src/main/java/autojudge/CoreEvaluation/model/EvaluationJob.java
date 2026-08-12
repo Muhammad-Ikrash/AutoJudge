@@ -11,6 +11,8 @@ public record EvaluationJob(
         String assignmentId,
         String studentId,
         String assignmentPath,
-        String submissionPath
+        String submissionPath,
+        String batchId,
+        int totalSubmissionsInBatch
 ) implements Serializable {
 }

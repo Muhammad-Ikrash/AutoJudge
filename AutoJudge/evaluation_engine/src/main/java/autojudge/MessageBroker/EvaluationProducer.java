@@ -17,7 +17,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Discovers student submissions from an assignment root directory (enforced structure),
+ * Discovers student submissions from an assignment root directory, generates a single batchId per run,
  * constructs EvaluationJob requests, and publishes them to the RabbitMQ evaluation exchange.
  */
 public class EvaluationProducer {
@@ -45,7 +45,11 @@ public class EvaluationProducer {
                 : "assignment-1";
 
         List<Path> submissionPaths = discoverSubmissions(assignmentPath);
-        log.info("Discovered {} submission(s) for assignment at {}", submissionPaths.size(), assignmentPath);
+        int totalSubmissions = submissionPaths.size();
+        String batchId = "batch-" + UUID.randomUUID().toString();
+
+        log.info("Discovered {} submission(s) for assignment at {}. Generated batchId={}",
+                totalSubmissions, assignmentPath, batchId);
 
         try (Channel channel = rabbitMQConnection.createChannel()) {
             for (Path subPath : submissionPaths) {
@@ -57,7 +61,9 @@ public class EvaluationProducer {
                         assignmentId,
                         studentId,
                         assignmentPath.toAbsolutePath().toString(),
-                        subPath.toAbsolutePath().toString()
+                        subPath.toAbsolutePath().toString(),
+                        batchId,
+                        totalSubmissions
                 );
 
                 byte[] messageBytes = objectMapper.writeValueAsBytes(job);
@@ -67,14 +73,15 @@ public class EvaluationProducer {
                         MessageProperties.PERSISTENT_TEXT_PLAIN,
                         messageBytes
                 );
-                log.info("Published EvaluationJob for studentId={} (submissionId={})", studentId, submissionId);
+                log.info("Published EvaluationJob: studentId={}, submissionId={}, batchId={}",
+                        studentId, submissionId, batchId);
             }
         } catch (Exception e) {
             log.error("Failed to produce evaluation jobs for {}", assignmentPath, e);
             throw new IOException("Failed to produce evaluation jobs", e);
         }
 
-        return submissionPaths.size();
+        return totalSubmissions;
     }
 
     /**
