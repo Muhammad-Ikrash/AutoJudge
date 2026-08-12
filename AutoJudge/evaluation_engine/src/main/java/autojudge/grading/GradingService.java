@@ -5,12 +5,14 @@ import autojudge.model.Submission;
 import autojudge.model.SubmissionResult;
 import autojudge.model.TestCase;
 import autojudge.model.Verdict;
+import autojudge.model.testCaseResult;
 import autojudge.util.FileUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +49,7 @@ public final class GradingService {
         double score = calculateFinalScore(grade.finalVerdict(), grade.earnedWeight(), totalWeight);
         Verdict finalVerdict = determineFinalVerdict(grade.finalVerdict(), grade.passedTests(), testCases.size());
 
-        return buildSubmissionResult(submission, score, finalVerdict, grade.passedTests(), testCases.size());
+        return buildSubmissionResult(submission, score, finalVerdict, grade.passedTests(), testCases.size(), grade.testCaseMapping());
     }
 
     // =========================================================================
@@ -81,6 +83,8 @@ public final class GradingService {
         int earnedWeight = 0;
         Verdict worstVerdict = Verdict.ACCEPTED;
 
+        List<testCaseResult> testcaseMapping = new ArrayList<>(); // to map the testcases to the verdict to return 
+        
         for (ExecutionResult executionResult : executionResults) {
             TestCase testCase = testCaseById.get(executionResult.testCaseId());
             if (testCase == null) {
@@ -94,9 +98,14 @@ public final class GradingService {
                 earnedWeight += testCase.weight();
             }
             worstVerdict = resolveWorseVerdict(worstVerdict, verdict);
+
+            testcaseMapping.add(new testCaseResult(testCase.id(), verdict));
+
+            log.info("[TestCase: {}] Verdict: {} | Time: {} ms", testCase.id(), verdict, executionResult.executionTime());
+
         }
 
-        return new EvaluationGrade(passedTests, earnedWeight, worstVerdict);
+        return new EvaluationGrade(passedTests, earnedWeight, worstVerdict, testcaseMapping);
     }
 
     public Verdict resolveVerdict(ExecutionResult executionResult, TestCase testCase) {
@@ -137,7 +146,8 @@ public final class GradingService {
             double score,
             Verdict finalVerdict,
             int passedTests,
-            int totalTests
+            int totalTests,
+            List<testCaseResult> testCaseMapping
     ) {
         String submissionId = (submission.filePath() != null && submission.filePath().getFileName() != null)
                 ? submission.filePath().getFileName().toString()
@@ -150,10 +160,11 @@ public final class GradingService {
             score,
             finalVerdict,
             passedTests,
-            totalTests
+            totalTests,
+            testCaseMapping
         );
     }
 
     // Helper record for intermediate grade accumulation
-    private record EvaluationGrade(int passedTests, int earnedWeight, Verdict finalVerdict) {}
+    private record EvaluationGrade(int passedTests, int earnedWeight, Verdict finalVerdict, List<testCaseResult> testCaseMapping) {}
 }

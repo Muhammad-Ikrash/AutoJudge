@@ -11,8 +11,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -44,28 +42,26 @@ public class CommandLineParser {
             );
         }
 
-        Path submissionsRoot = Path.of(args[0]);
+        Path submissionPath = Path.of(args[0]);
         Path inputDirectory = Path.of(args[1]);
         Path outputDirectory = Path.of(args[2]);
         Path configFile = Path.of(args[3]);
         Path weightsFile = Path.of(args[4]);
 
-        validateInputs(submissionsRoot, inputDirectory, outputDirectory, configFile);
+        validateInputs(submissionPath, inputDirectory, outputDirectory, configFile);
 
         Assignment assignment = AssignmentLoader.loadConfig(configFile);
         Map<String, Integer> weightsByTestCase = weightsFileParser.parse(weightsFile);
         List<TestCase> testCases = testCaseFileProcessor.processTestCases(inputDirectory, outputDirectory, weightsByTestCase);
         ContainerConfig containerConfig = ContainerConfig.from(assignment);
-        List<Path> submissionFolders = listSubmissionFolders(submissionsRoot);
 
         return new EvaluationContext(
-                submissionsRoot,
+                submissionPath,
                 inputDirectory,
                 outputDirectory,
                 assignment,
                 containerConfig,
-                testCases,
-                submissionFolders
+                testCases
         );
     }
 
@@ -89,24 +85,24 @@ public class CommandLineParser {
         }
     }
 
-    private List<Path> listSubmissionFolders(Path submissionsRoot) throws IOException {
-        List<Path> submissionFolders = new ArrayList<>();
-        if (!Files.exists(submissionsRoot)) {
-            return submissionFolders;
-        }
+    // private List<Path> listSubmissionFolders(Path submissionsRoot) throws IOException {
+    //     List<Path> submissionFolders = new ArrayList<>();
+    //     if (!Files.exists(submissionsRoot)) {
+    //         return submissionFolders;
+    //     }
 
-        if (Files.isDirectory(submissionsRoot)) {
-            try (var stream = Files.list(submissionsRoot)) {
-                stream
-                    .filter(Files::isDirectory)
-                    .sorted(Comparator.comparing(path -> path.getFileName().toString()))
-                    .forEach(submissionFolders::add);
-            }
-        }
+    //     if (Files.isDirectory(submissionsRoot)) {
+    //         try (var stream = Files.list(submissionsRoot)) {
+    //             stream
+    //                 .filter(Files::isDirectory)
+    //                 .sorted(Comparator.comparing(path -> path.getFileName().toString()))
+    //                 .forEach(submissionFolders::add);
+    //         }
+    //     }
 
-        if (submissionFolders.isEmpty()) {
-            submissionFolders.add(submissionsRoot);
-        }
-        return submissionFolders;
-    }
+    //     if (submissionFolders.isEmpty()) {
+    //         submissionFolders.add(submissionsRoot);
+    //     }
+    //     return submissionFolders;
+    // }
 }

@@ -33,24 +33,43 @@ public class GradingOrchestrator {
         this.gradingService = Objects.requireNonNull(gradingService, "gradingService must not be null");
     }
 
-    public List<SubmissionResult> evaluateAllSubmissions(EvaluationContext context) throws Exception {
-        List<SubmissionResult> results = new ArrayList<>();
-        log.info("Starting evaluation for {} submission folder(s)", context.submissionFolders().size());
+    // public List<SubmissionResult> evaluateAllSubmissions(EvaluationContext context) throws Exception {
+    //     List<SubmissionResult> results = new ArrayList<>();
+    //     log.info("Starting evaluation for {} submission folder(s)", context.submissionFolders().size());
 
-        for (Path submissionFolder : context.submissionFolders()) {
-            SubmissionResult result = evaluateSingleSubmission(context, submissionFolder);
-            results.add(result);
-        }
+    //     for (Path submissionFolder : context.submissionFolders()) {
+    //         SubmissionResult result = evaluateSingleSubmission(context, submissionFolder);
+    //         results.add(result);
+    //     }
 
-        return results;
-    }
+    //     return results;
+    // }
 
-    public SubmissionResult evaluateSingleSubmission(EvaluationContext context, Path submissionFolder) throws Exception {
-        String studentId = resolveStudentId(submissionFolder);
-        log.info("Evaluating submission for student '{}' at {}", studentId, submissionFolder);
+    // public SubmissionResult evaluateSingleSubmission(EvaluationContext context, Path submissionFolder) throws Exception {
+    //     String studentId = resolveStudentId(submissionFolder);
+    //     log.info("Evaluating submission for student '{}' at {}", studentId, submissionFolder);
+
+    //     Submission submission = SubmissionLoader.load(
+    //             submissionFolder,
+    //             context.inputDirectory(),
+    //             context.outputDirectory(),
+    //             studentId,
+    //             context.assignment().assignmentId()
+    //     );
+
+    //     List<ExecutionResult> executionResults = dockerRunner.runSubmission(
+    //             context.containerConfig(), submission, context.testCases()
+    //     );
+
+    //     return gradingService.grade(submission, context.testCases(), executionResults);
+    // }
+
+        public SubmissionResult evaluate(EvaluationContext context) throws Exception {
+        String studentId = resolveStudentId(context.submissionPath());
+        log.info("Evaluating submission for student '{}' at {}", studentId, context.submissionPath());
 
         Submission submission = SubmissionLoader.load(
-                submissionFolder,
+                context.submissionPath(),
                 context.inputDirectory(),
                 context.outputDirectory(),
                 studentId,
@@ -63,6 +82,8 @@ public class GradingOrchestrator {
 
         return gradingService.grade(submission, context.testCases(), executionResults);
     }
+
+
 
     private String resolveStudentId(Path submissionFolder) {
         if (submissionFolder == null || submissionFolder.getFileName() == null) {

@@ -1,5 +1,7 @@
 package autojudge.model;
 
+import java.util.List;
+
 public record SubmissionResult(
     String submissionId,
     String assignmentId,
@@ -7,6 +9,8 @@ public record SubmissionResult(
     double score,
     Verdict verdict,
     int passedTests,
-    int totalTests
+    int totalTests,
+    List<testCaseResult> testCasesResults
 ) {
+
 }

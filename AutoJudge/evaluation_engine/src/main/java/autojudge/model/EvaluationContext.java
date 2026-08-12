@@ -9,11 +9,10 @@ import java.util.List;
  * Context container holding input options, assignment configuration, test cases, and submission targets.
  */
 public record EvaluationContext(
-        Path submissionsRoot,
+        Path submissionPath,
         Path inputDirectory,
         Path outputDirectory,
         Assignment assignment,
         ContainerConfig containerConfig,
-        List<TestCase> testCases,
-        List<Path> submissionFolders
+        List<TestCase> testCases
 ) {}

@@ -25,21 +25,18 @@ public final class Main {
             EvaluationContext context = cliParser.parse(args);
 
             GradingOrchestrator orchestrator = new GradingOrchestrator();
-            List<SubmissionResult> results = orchestrator.evaluateAllSubmissions(context);
+            SubmissionResult results = orchestrator.evaluate(context);
 
-            printSubmissionResults(results);
+            printSubmissionResult(results);
         } catch (Exception e) {
             log.error("Evaluation failed: {}", e.getMessage());
             printUsage();
             System.exit(1);
         }
     }
-
-    private static void printSubmissionResults(List<SubmissionResult> results) {
-        log.info("Evaluation Summary ({} submission(s)):", results.size());
-        for (SubmissionResult result : results) {
-            System.out.println(result);
-        }
+    
+    private static void printSubmissionResult(SubmissionResult result) {
+        System.out.println(result);
     }
 
     private static void printUsage() {

@@ -122,7 +122,7 @@ public final class DockerRunner {
                     containerId, submissionDir, layout, testCase, timeLimitSec
             );
 
-            log.info("[TestCase: {}] Verdict: {} | Time: {} ms", testCase.id(), result.verdict(), result.executionTime());
+            log.info("[TestCase: {}] | Time: {} ms", testCase.id(), result.executionTime());
 
             results.add(result);
 
