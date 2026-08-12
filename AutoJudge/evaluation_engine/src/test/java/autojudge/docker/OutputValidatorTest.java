@@ -1,6 +1,7 @@
 package autojudge.docker;
 
-import autojudge.model.ExecCMD;
+import autojudge.CoreEvaluation.docker.OutputValidator;
+import autojudge.CoreEvaluation.model.ExecCMD;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

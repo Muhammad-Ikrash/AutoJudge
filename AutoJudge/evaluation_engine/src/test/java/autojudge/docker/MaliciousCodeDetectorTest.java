@@ -1,5 +1,6 @@
 package autojudge.docker;
 
+import autojudge.CoreEvaluation.docker.MaliciousCodeDetector;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;

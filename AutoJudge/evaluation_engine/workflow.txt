@@ -1,65 +1,74 @@
 ================================================================================
-AutoJudge Evaluation Engine — System Workflow Specification
+AutoJudge Evaluation Engine — Distributed & Core System Workflow Specification
 ================================================================================
 
-1. INITIATING COMMANDS
+1. INITIATING COMMANDS & CLI MODES
 --------------------------------------------------------------------------------
-Execute the evaluation engine via CLI using either method:
+A. Producer Mode (Distributed Job Publishing):
+   java -jar autojudge.jar producer <assignment-path>
+   - Scans <assignment-path>/submissions/ directory structure.
+   - Creates serializable EvaluationJob objects (carrying assignment root & submission path).
+   - Publishes jobs to RabbitMQ evaluation.exchange (evaluation.queue).
 
-A. Production JAR Execution:
-   java -cp target/evaluation_engine-1.0-SNAPSHOT.jar autojudge.Main \
-     <submissionsRoot> <inputDirectory> <outputDirectory> <configFile> <weightsFile>
+B. Worker Mode (Distributed Evaluation Consumer):
+   java -jar autojudge.jar worker
+   - Long-running consumer listening on RabbitMQ evaluation.queue with prefetch QoS=1.
+   - Delegates EvaluationJob execution to EvaluationEngine and publishes SubmissionResult to result.queue.
+   - Issues manual ACK only after successful evaluation & result publication.
 
-B. Maven Exec Plugin (Development):
-   mvn exec:java -Dexec.args="<submissionsRoot> <inputDirectory> <outputDirectory> <configFile> <weightsFile>"
+C. Result Worker Mode (Aggregation & Reporting):
+   java -jar autojudge.jar result-worker [reportOutputPath] [expectedCount]
+   - Consumes SubmissionResult objects from result.queue.
+   - Generates formatted Excel report (results.xlsx) using ExcelGenerator upon receiving batch results.
 
-Arguments:
-  1. <submissionsRoot> : Folder containing student submissions (e.g., .../submissions/testStudent)
-  2. <inputDirectory>  : Folder containing test case input files (e.g., .../input)
-  3. <outputDirectory> : Folder containing expected output files (e.g., .../expected)
-  4. <configFile>      : JSON config file for assignment limits (e.g., config.json)
-  5. <weightsFile>     : JSON config file for test case weights (e.g., weights.json)
+D. Direct Local Mode (Single Submission CLI Execution):
+   java -jar autojudge.jar <submissionPath> <inputDirectory> <outputDirectory> <configFile> <weightsFile>
 
-
-2. STEP-BY-STEP EVALUATION WORKFLOW
 --------------------------------------------------------------------------------
-Step 1: Configuration & Test Case Pre-Processing
-  - Load limits & profile from `config.json` and weights from `weights.json`.
-  - Use universal container image defined by `DockerConstants.DEFAULT_IMAGE` (`auto-judge-container:v1.0`).
-  - Index and pair input & output files using direct stem match, prefix normalization 
-    (e.g., `test_input (1).txt` -> `test_output (1).txt`), or sorted index fallback.
+2. MANDATORY ASSIGNMENT DIRECTORY STRUCTURE
+--------------------------------------------------------------------------------
+<assignment-path>/
+  ├── config.json       : Assignment limits & profile config
+  ├── weights.json      : Test case weight mappings
+  ├── input/            : Test case input files
+  ├── expected/         : Expected output files
+  └── submissions/      : Student submission folders
+      └── <studentId>/  : Individual student submission directory
+
+--------------------------------------------------------------------------------
+3. STEP-BY-STEP EVALUATION WORKFLOW
+--------------------------------------------------------------------------------
+Step 1: Job Consumption & Path Resolution (EvaluationEngine)
+  - Worker receives EvaluationJob (containing assignmentPath & submissionPath).
+  - EvaluationEngine resolves internal paths relative to assignment root:
+    * inputDirectory  : <assignmentPath>/input
+    * outputDirectory : <assignmentPath>/expected
+    * configFile      : <assignmentPath>/config.json
+    * weightsFile     : <assignmentPath>/weights.json
+  - Loads configuration, pairs test cases, and creates EvaluationContext.
 
 Step 2: Container Provisioning & Security Hardening
-  - Log: `[DockerRunner.java:<line>] Step 1: Provisioning & starting Docker container...`
-  - Create persistent Docker instance with HostConfig boundaries:
-    * Memory ceiling (e.g. 256MB/512MB)
-    * CPU quota (NanoCPUs, e.g. 1.0 CPU)
-    * Network Mode: "none" (isolated)
-    * PID Limit: 100 (fork-bomb prevention)
+  - Log: `[DockerRunner.java] Step 1: Provisioning & starting Docker container...`
+  - Create isolated container using universal image (`auto-judge-container:v1.0`):
+    * Memory limit: 256MB / 512MB
+    * CPU quota: 1.0 NanoCPU
+    * Network Mode: "none"
+    * PID Limit: 100
 
 Step 3: Submission Copy & In-Container Compilation
-  - Log: `[DockerRunner.java:<line>] Step 2: Copying submission source files into container`
-  - Copy student source directory to `/workspace/<studentId>` inside container.
-  - Log: `[DockerRunner.java:<line>] Step 3: Scanning layout and compiling submission inside container`
-  - Auto-detect language at runtime via `SubmissionScanner.scan()`.
-  - Compile using `CompileCommandBuilder` wrapped with timeout (`timeout -k 1s 30s <command>`).
-  - If compilation fails, return `COMPILATION_ERROR` for all test cases.
+  - Copy student source directory to container workspace (/workspace).
+  - Auto-detect language at runtime via SubmissionScanner.
+  - Compile using CompileCommandBuilder with timeout wrapper (`timeout -k 1s 30s <command>`).
+  - If compilation fails, return COMPILATION_ERROR for test cases.
 
-Step 4: Iterative Test Case Execution
-  - Log: `[DockerRunner.java:<line>] Step 4: Executing N test cases`
-  - For each test case:
-    1. Copy input file to container workspace.
-    2. Capture pre-execution file snapshot (`listFiles()`).
-    3. Build safely escaped runner script via `ExecutionCommandBuilder` (`./solution < 'input.txt'`).
-    4. Execute runner wrapped in GNU timeout (`timeout -k 1s <limit>s <script>`).
-    5. Output capped at 1MB to protect JVM memory.
-    6. Capture post-execution file snapshot. Filter allowed/benign runtime files (`__pycache__`, `.class`, `.tmp`, `.log`).
-       Unrecognized file creation triggers immediate container termination and `MALICIOUS_CODE` verdict.
-    7. Clean up input file from container.
-    8. Log result: `[DockerRunner.java:<line>] Test Case <id> finished -> Verdict: <verdict>`
+Step 4: Iterative Test Case Execution & Security Monitoring
+  - Execute test cases with GNU timeout wrapper (`timeout -k 1s <limit>s <script>`).
+  - Track pre/post execution file snapshots. Unrecognized file creation triggers
+    immediate container teardown and MALICIOUS_CODE verdict (score = 0.0).
 
-Step 5: Verdict Resolution, Scoring & Container Teardown
-  - Evaluate output against expected output via `OutputComparator`.
-  - Calculate weighted score (0.0 to 100.0). Submissions triggering `MALICIOUS_CODE` score 0.0.
-  - Log: `[DockerRunner.java:<line>] Step 5: Cleaning up container resources`
-  - Container stopped and forcefully removed in a `finally` block to prevent leaks.
+Step 5: Scoring, Result Publishing & Manual ACK
+  - OutputComparator checks student output against expected output.
+  - Calculate weighted score (0.0 to 100.0).
+  - Publish SubmissionResult to RabbitMQ result.exchange (result.queue).
+  - Acknowledge (ACK) original evaluation message in RabbitMQ.
+  - Container teardown executed in finally block.

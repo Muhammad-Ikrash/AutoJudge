@@ -1,8 +1,9 @@
 package autojudge.docker;
 
-import autojudge.config.ContainerConfig;
-import autojudge.exception.DockerException;
-import autojudge.model.ExecCMD;
+import autojudge.CoreEvaluation.config.ContainerConfig;
+import autojudge.CoreEvaluation.docker.ContainerManager;
+import autojudge.CoreEvaluation.exception.DockerException;
+import autojudge.CoreEvaluation.model.ExecCMD;
 
 import java.nio.file.Path;
 import java.util.ArrayList;

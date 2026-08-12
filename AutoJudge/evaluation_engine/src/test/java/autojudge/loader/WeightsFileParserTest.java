@@ -1,5 +1,6 @@
 package autojudge.loader;
 
+import autojudge.CoreEvaluation.loader.WeightsFileParser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

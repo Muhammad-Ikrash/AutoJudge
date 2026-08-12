@@ -1,5 +1,6 @@
 package autojudge.grading;
 
+import autojudge.CoreEvaluation.grading.OutputComparator;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

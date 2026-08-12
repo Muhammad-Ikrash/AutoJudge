@@ -1,10 +1,13 @@
 package autojudge.grading;
 
-import autojudge.model.ExecutionResult;
-import autojudge.model.Submission;
-import autojudge.model.SubmissionResult;
-import autojudge.model.TestCase;
-import autojudge.model.Verdict;
+import autojudge.CoreEvaluation.grading.GradingService;
+import autojudge.CoreEvaluation.grading.OutputComparator;
+import autojudge.CoreEvaluation.grading.ScoreCalculator;
+import autojudge.CoreEvaluation.model.ExecutionResult;
+import autojudge.CoreEvaluation.model.Submission;
+import autojudge.CoreEvaluation.model.SubmissionResult;
+import autojudge.CoreEvaluation.model.TestCase;
+import autojudge.CoreEvaluation.model.Verdict;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;

@@ -1,12 +1,13 @@
 package autojudge.docker;
 
-import autojudge.config.ContainerConfig;
-import autojudge.config.DockerConstants;
-import autojudge.model.ExecCMD;
-import autojudge.model.ExecutionResult;
-import autojudge.model.Submission;
-import autojudge.model.TestCase;
-import autojudge.model.Verdict;
+import autojudge.CoreEvaluation.config.ContainerConfig;
+import autojudge.CoreEvaluation.config.DockerConstants;
+import autojudge.CoreEvaluation.docker.DockerRunner;
+import autojudge.CoreEvaluation.model.ExecCMD;
+import autojudge.CoreEvaluation.model.ExecutionResult;
+import autojudge.CoreEvaluation.model.Submission;
+import autojudge.CoreEvaluation.model.TestCase;
+import autojudge.CoreEvaluation.model.Verdict;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
