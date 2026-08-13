@@ -1,6 +1,8 @@
 package autojudge.MessageBroker;
 
+import autojudge.CoreEvaluation.compiler.SubmissionScanner;
 import autojudge.CoreEvaluation.model.EvaluationJob;
+import autojudge.pipeline.PipelineOrchestrator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.MessageProperties;
@@ -34,12 +36,14 @@ public class EvaluationProducer {
 
     /**
      * Discovers submissions under assignmentPath/submissions/ and publishes EvaluationJobs to RabbitMQ.
+     * Optionally runs plagiarism detection if enablePlagiarism is true.
      *
      * @param assignmentPath Path to the assignment root folder.
+     * @param enablePlagiarism Toggle flag for optional plagiarism analysis.
      * @return Number of evaluation jobs published.
      * @throws IOException If discovering or publishing fails.
      */
-    public int produceEvaluationJobs(Path assignmentPath) throws IOException {
+    public int produceEvaluationJobs(Path assignmentPath, boolean enablePlagiarism) throws IOException {
         String assignmentId = assignmentPath.getFileName() != null
                 ? assignmentPath.getFileName().toString()
                 : "assignment-1";
@@ -50,6 +54,16 @@ public class EvaluationProducer {
 
         log.info("Discovered {} submission(s) for assignment at {}. Generated batchId={}",
                 totalSubmissions, assignmentPath, batchId);
+
+        // Auto-detect programming language dynamically from discovered submissions
+        String detectedLanguage = detectLanguageFromSubmissions(submissionPaths);
+        log.info("Auto-detected programming language for assignment '{}': {}", assignmentId, detectedLanguage);
+
+        // Perform optional plagiarism detection if requested
+        if (enablePlagiarism) {
+            PipelineOrchestrator pipeline = new PipelineOrchestrator();
+            pipeline.processPlagiarismStage(assignmentId, assignmentPath, detectedLanguage, true);
+        }
 
         try (Channel channel = rabbitMQConnection.createChannel()) {
             for (Path subPath : submissionPaths) {
@@ -82,6 +96,26 @@ public class EvaluationProducer {
         }
 
         return totalSubmissions;
+    }
+
+    public int produceEvaluationJobs(Path assignmentPath) throws IOException {
+        return produceEvaluationJobs(assignmentPath, false);
+    }
+
+    private String detectLanguageFromSubmissions(List<Path> submissionPaths) {
+        if (submissionPaths == null || submissionPaths.isEmpty()) {
+            return "cpp";
+        }
+        for (Path subPath : submissionPaths) {
+            try {
+                var layout = SubmissionScanner.scan(subPath);
+                if (layout != null && layout.language() != null) {
+                    return layout.language().name().toLowerCase();
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return "cpp";
     }
 
     /**

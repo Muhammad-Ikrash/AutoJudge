@@ -5,7 +5,9 @@ import autojudge.PlagiarismDetection.model.PlagiarismReport;
 import autojudge.PlagiarismDetection.model.SimilarityPair;
 import de.jplag.JPlag;
 import de.jplag.JPlagResult;
+import de.jplag.Language;
 import de.jplag.cpp.CPPLanguage;
+import de.jplag.java.JavaLanguage;
 import de.jplag.options.JPlagOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,14 +29,16 @@ public class JPlagDetector implements PlagiarismDetector {
 
     @Override
     public PlagiarismReport analyze(PlagiarismAnalysisRequest request) {
-        log.info("Starting JPlag analysis for assignment: {}", request.assignmentId());
+        log.info("Starting JPlag analysis for assignment: {} (language: {})", request.assignmentId(), request.language());
 
         Path submissionsDir = request.assignmentPath().resolve("submissions");
         Path rootToScan = Files.isDirectory(submissionsDir) ? submissionsDir : request.assignmentPath();
 
+        Language jplagLanguage = resolveJPlagLanguage(request.language());
+
         try {
             JPlagOptions options = new JPlagOptions(
-                    new CPPLanguage(),
+                    jplagLanguage,
                     Set.of(rootToScan.toFile()),
                     Collections.emptySet()
             );
@@ -64,5 +68,17 @@ public class JPlagDetector implements PlagiarismDetector {
             log.error("JPlag execution failed for assignment {}", request.assignmentId(), e);
             throw new RuntimeException("JPlag plagiarism analysis failed: " + e.getMessage(), e);
         }
+    }
+
+    private Language resolveJPlagLanguage(String language) {
+        if (language == null) {
+            throw new UnsupportedOperationException("Plagiarism detection is not supported for null language");
+        }
+        return switch (language.toLowerCase().trim()) {
+            case "cpp", "c++" -> new CPPLanguage();
+            case "java" -> new JavaLanguage();
+            default -> throw new UnsupportedOperationException(
+                    "Plagiarism detection is not supported for language: " + language);
+        };
     }
 }

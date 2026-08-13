@@ -30,35 +30,36 @@ class PipelineOrchestratorTest {
         };
 
         PipelineOrchestrator orchestrator = new PipelineOrchestrator(serviceMock);
-        Optional<PlagiarismReport> result = orchestrator.processPlagiarismStage("assignment-1", tempDir, false);
+        Optional<PlagiarismReport> result = orchestrator.processPlagiarismStage("assignment-1", tempDir, "cpp", false);
 
         assertTrue(result.isEmpty(), "Expected empty report when plagiarism is disabled");
         assertFalse(called.get(), "Expected PlagiarismAnalysisService NOT to be called when disabled");
     }
 
     @Test
-    void testPlagiarismEnabled_invokesPlagiarismExecution(@TempDir Path tempDir) {
+    void testPlagiarismEnabled_invokesPlagiarismExecutionForJava(@TempDir Path tempDir) {
         AtomicBoolean called = new AtomicBoolean(false);
         PlagiarismAnalysisService serviceMock = new PlagiarismAnalysisService() {
             @Override
             public PlagiarismReport analyze(PlagiarismAnalysisRequest request) {
                 called.set(true);
-                return new PlagiarismReport(request.assignmentId(), List.of(new SimilarityPair("studentA", "studentB", 95.0)));
+                assertEquals("java", request.language());
+                return new PlagiarismReport(request.assignmentId(), List.of(new SimilarityPair("studentA", "studentB", 92.0)));
             }
         };
 
         PipelineOrchestrator orchestrator = new PipelineOrchestrator(serviceMock);
-        Optional<PlagiarismReport> result = orchestrator.processPlagiarismStage("assignment-1", tempDir, true);
+        Optional<PlagiarismReport> result = orchestrator.processPlagiarismStage("assignment-java", tempDir, "java", true);
 
         assertTrue(result.isPresent(), "Expected PlagiarismReport when plagiarism is enabled");
         assertTrue(called.get(), "Expected PlagiarismAnalysisService to be called when enabled");
-        assertEquals("assignment-1", result.get().assignmentId());
+        assertEquals("assignment-java", result.get().assignmentId());
         assertEquals(1, result.get().similarities().size());
         assertEquals("studentA", result.get().similarities().get(0).submissionA());
     }
 
     @Test
-    void testFullPipelineIntegration_withSimilarSubmissions(@TempDir Path tempDir) throws IOException {
+    void testFullPipelineIntegration_withSimilarCppSubmissions(@TempDir Path tempDir) throws IOException {
         Path submissions = tempDir.resolve("submissions");
         Path studentA = submissions.resolve("studentA");
         Path studentB = submissions.resolve("studentB");
@@ -109,10 +110,18 @@ class PipelineOrchestratorTest {
         Files.writeString(studentB.resolve("main.cpp"), codeB);
 
         PipelineOrchestrator orchestrator = new PipelineOrchestrator();
-        Optional<PlagiarismReport> result = orchestrator.processPlagiarismStage("assignment-demo", tempDir, true);
+        Optional<PlagiarismReport> result = orchestrator.processPlagiarismStage("assignment-cpp", tempDir, "cpp", true);
 
         assertTrue(result.isPresent());
-        assertEquals("assignment-demo", result.get().assignmentId());
+        assertEquals("assignment-cpp", result.get().assignmentId());
         assertFalse(result.get().similarities().isEmpty(), "Expected JPlag to find similarity between studentA and studentB");
+    }
+
+    @Test
+    void testUnsupportedLanguage_skipsGracefullyWithWarning(@TempDir Path tempDir) {
+        PipelineOrchestrator orchestrator = new PipelineOrchestrator();
+        Optional<PlagiarismReport> result = orchestrator.processPlagiarismStage("assignment-py", tempDir, "python", true);
+
+        assertTrue(result.isEmpty(), "Expected empty result when language is unsupported");
     }
 }

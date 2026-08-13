@@ -33,12 +33,14 @@ public class PipelineOrchestrator {
      *
      * @param assignmentId Identifier of the assignment.
      * @param assignmentPath Path to the assignment folder containing student submissions.
+     * @param language Programming language of the assignment (e.g. "cpp", "java").
      * @param plagiarismEnabled Toggle flag from request/frontend.
-     * @return Optional containing PlagiarismReport if plagiarism checking was enabled, empty otherwise.
+     * @return Optional containing PlagiarismReport if plagiarism checking was enabled and supported, empty otherwise.
      */
     public Optional<PlagiarismReport> processPlagiarismStage(
             String assignmentId,
             Path assignmentPath,
+            String language,
             boolean plagiarismEnabled
     ) {
         if (!plagiarismEnabled) {
@@ -46,14 +48,31 @@ public class PipelineOrchestrator {
             return Optional.empty();
         }
 
-        log.info("Plagiarism checking is enabled for assignment '{}'. Triggering plagiarism analysis service.", assignmentId);
-        PlagiarismAnalysisRequest request = new PlagiarismAnalysisRequest(
-                assignmentId,
-                assignmentPath,
-                PlagiarismConfig.defaultConfig()
-        );
+        log.info("Plagiarism checking is enabled for assignment '{}' (language: '{}'). Triggering plagiarism analysis service.", assignmentId, language);
+        try {
+            PlagiarismAnalysisRequest request = new PlagiarismAnalysisRequest(
+                    assignmentId,
+                    assignmentPath,
+                    language,
+                    PlagiarismConfig.defaultConfig()
+            );
 
-        PlagiarismReport report = plagiarismAnalysisService.analyze(request);
-        return Optional.of(report);
+            PlagiarismReport report = plagiarismAnalysisService.analyze(request);
+            return Optional.of(report);
+        } catch (UnsupportedOperationException e) {
+            log.warn("Plagiarism detection unavailable for language '{}', skipping plagiarism pipeline stage: {}", language, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Overloaded helper defaulting language to "cpp" for backwards compatibility.
+     */
+    public Optional<PlagiarismReport> processPlagiarismStage(
+            String assignmentId,
+            Path assignmentPath,
+            boolean plagiarismEnabled
+    ) {
+        return processPlagiarismStage(assignmentId, assignmentPath, "cpp", plagiarismEnabled);
     }
 }

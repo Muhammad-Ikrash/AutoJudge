@@ -19,7 +19,7 @@ import java.nio.file.Path;
  * Main CLI entry point for AutoJudge matching the RabbitMQ specification.
  *
  * Supported commands:
- *   java -jar autojudge.jar producer <assignment-path>
+ *   java -jar autojudge.jar producer <assignment-path> [--plagiarism]
  *   java -jar autojudge.jar worker
  *   java -jar autojudge.jar result-worker [reportOutputPath] [expectedCount]
  */
@@ -41,10 +41,12 @@ public final class Main {
             switch (command) {
                 case "producer":
                     if (args.length < 2) {
-                        System.err.println("Usage: java -jar autojudge.jar producer <assignment-path>");
+                        System.err.println("Usage: java -jar autojudge.jar producer <assignment-path> [--plagiarism]");
                         System.exit(1);
                     }
-                    produceJobs(Path.of(args[1]));
+                    Path assignmentPath = Path.of(args[1]);
+                    boolean enablePlagiarism = args.length > 2 && args[2].equalsIgnoreCase("--plagiarism");
+                    produceJobs(assignmentPath, enablePlagiarism);
                     break;
                 case "worker":
                 case "evaluator":
@@ -63,13 +65,17 @@ public final class Main {
         }
     }
 
-    public static void produceJobs(Path assignmentPath) throws Exception {
+    public static void produceJobs(Path assignmentPath, boolean enablePlagiarism) throws Exception {
         log.info("Starting Producer mode for assignment path: {}", assignmentPath);
         RabbitMQConnection rabbitMQConnection = new RabbitMQConnection();
         EvaluationProducer producer = new EvaluationProducer(rabbitMQConnection);
 
-        int count = producer.produceEvaluationJobs(assignmentPath);
+        int count = producer.produceEvaluationJobs(assignmentPath, enablePlagiarism);
         log.info("Successfully produced {} evaluation job(s) for assignment '{}'", count, assignmentPath);
+    }
+
+    public static void produceJobs(Path assignmentPath) throws Exception {
+        produceJobs(assignmentPath, false);
     }
 
     public static void startEvaluationWorker() throws Exception {
@@ -112,7 +118,7 @@ public final class Main {
 
     private static void printUsage() {
         System.err.println("AutoJudge Commands:");
-        System.err.println("  Producer mode: java -jar autojudge.jar producer <assignment-path>");
+        System.err.println("  Producer mode: java -jar autojudge.jar producer <assignment-path> [--plagiarism]");
         System.err.println("  Worker mode:   java -jar autojudge.jar worker");
         System.err.println("  Result Worker: java -jar autojudge.jar result-worker [reportOutputPath] [expectedCount]");
     }
