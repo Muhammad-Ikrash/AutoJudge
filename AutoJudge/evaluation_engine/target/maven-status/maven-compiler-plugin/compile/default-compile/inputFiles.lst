@@ -47,4 +47,12 @@
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/MessageBroker/RabbitMQConnection.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/MessageBroker/ResultPublisher.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/MessageBroker/ResultWorker.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/PlagiarismDetection/detector/JPlagDetector.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/PlagiarismDetection/detector/PlagiarismDetector.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/PlagiarismDetection/model/PlagiarismAnalysisRequest.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/PlagiarismDetection/model/PlagiarismConfig.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/PlagiarismDetection/model/PlagiarismReport.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/PlagiarismDetection/model/SimilarityPair.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/PlagiarismDetection/service/PlagiarismAnalysisService.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/pipeline/PipelineOrchestrator.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/reporting/ExcelGenerator.java

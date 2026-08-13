@@ -8,12 +8,14 @@ autojudge/reporting/ExcelGenerator.class
 autojudge/CoreEvaluation/model/TestCase.class
 autojudge/CoreEvaluation/loader/AssignmentLoader.class
 autojudge/MessageBroker/EvaluationProducer.class
+autojudge/PlagiarismDetection/detector/JPlagDetector.class
 autojudge/CoreEvaluation/docker/DockerClientFactory.class
 autojudge/MessageBroker/ResultPublisher.class
 autojudge/CoreEvaluation/compiler/ExecutionCommandBuilder.class
 autojudge/CoreEvaluation/loader/ConfigLoader.class
 autojudge/CoreEvaluation/docker/DefaultContainerManager$2.class
 autojudge/MessageBroker/RabbitMQConnection.class
+autojudge/PlagiarismDetection/detector/PlagiarismDetector.class
 autojudge/CoreEvaluation/compiler/CompileCommandBuilder$1.class
 autojudge/CoreEvaluation/loader/WeightsFileParser.class
 autojudge/CoreEvaluation/grading/EvaluationEngine.class
@@ -27,6 +29,7 @@ autojudge/CoreEvaluation/loader/CommandLineParser.class
 autojudge/CoreEvaluation/compiler/CompileCommandBuilder.class
 autojudge/Main.class
 autojudge/CoreEvaluation/grading/GradingService$EvaluationGrade.class
+autojudge/PlagiarismDetection/model/SimilarityPair.class
 autojudge/CoreEvaluation/compiler/SubmissionScanner.class
 autojudge/CoreEvaluation/config/DockerConstants.class
 autojudge/CoreEvaluation/model/Assignment$ResourceLimits.class
@@ -40,14 +43,18 @@ autojudge/MessageBroker/EvaluationWorker.class
 autojudge/CoreEvaluation/model/Verdict.class
 autojudge/CoreEvaluation/grading/ScoreCalculator.class
 autojudge/CoreEvaluation/model/ExecutionResult.class
+autojudge/pipeline/PipelineOrchestrator.class
 autojudge/CoreEvaluation/docker/OutputValidator.class
 autojudge/CoreEvaluation/util/PathUtils.class
 autojudge/CoreEvaluation/exception/DockerException.class
 autojudge/CoreEvaluation/grading/GradingService.class
 autojudge/CoreEvaluation/model/EvaluationContext.class
+autojudge/PlagiarismDetection/model/PlagiarismAnalysisRequest.class
+autojudge/PlagiarismDetection/model/PlagiarismConfig.class
 autojudge/MessageBroker/ResultWorker.class
 autojudge/CoreEvaluation/model/SubmissionLayout.class
 autojudge/CoreEvaluation/util/FileUtils.class
+autojudge/PlagiarismDetection/model/PlagiarismReport.class
 autojudge/CoreEvaluation/loader/TestCaseFileProcessor.class
 autojudge/CoreEvaluation/model/ExecCMD.class
 autojudge/CoreEvaluation/docker/DockerRunner.class
@@ -55,3 +62,4 @@ autojudge/CoreEvaluation/grading/GradingOrchestrator.class
 autojudge/CoreEvaluation/util/JsonUtils.class
 autojudge/CoreEvaluation/config/Language.class
 autojudge/CoreEvaluation/docker/TestCaseExecutor.class
+autojudge/PlagiarismDetection/service/PlagiarismAnalysisService.class

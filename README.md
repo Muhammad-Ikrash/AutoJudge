@@ -66,12 +66,12 @@ Angular Dashboard
 ```
 AutoJudge/
 │
-├── collector/
-├── grader/
-├── sandbox/
+├── classroom_scraper/
+├── evaluation_engine/
+├── plagiarism_checker/
 ├── backend/
 ├── frontend/
-├── downloads/
+├── assignments/
 └── README.md
 ```
 
