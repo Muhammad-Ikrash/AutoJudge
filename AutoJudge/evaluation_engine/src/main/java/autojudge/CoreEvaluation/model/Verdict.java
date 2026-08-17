@@ -11,7 +11,8 @@ public enum Verdict {
     MEMORY_LIMIT_EXCEEDED(4),
     COMPILATION_ERROR(5),
     INTERNAL_ERROR(6),
-    MALICIOUS_CODE(7);
+    MALICIOUS_CODE(7),
+    PROCESS_LIMIT_EXCEEDED(8);
 
     private final int severity;
 

@@ -20,7 +20,7 @@ import java.util.Map;
 public class CommandLineParser {
 
     private static final Logger log = LoggerFactory.getLogger(CommandLineParser.class);
-    private static final int EXPECTED_ARGUMENT_COUNT = 6;
+    private static final int EXPECTED_ARGUMENT_COUNT = 5;
 
     private final WeightsFileParser weightsFileParser;
     private final TestCaseFileProcessor testCaseFileProcessor;
@@ -42,11 +42,11 @@ public class CommandLineParser {
             );
         }
 
-        Path submissionPath = Path.of(args[1]);
-        Path inputDirectory = Path.of(args[2]);
-        Path outputDirectory = Path.of(args[3]);
-        Path configFile = Path.of(args[4]);
-        Path weightsFile = Path.of(args[5]);
+        Path submissionPath = Path.of(args[0]);
+        Path inputDirectory = Path.of(args[1]);
+        Path outputDirectory = Path.of(args[2]);
+        Path configFile = Path.of(args[3]);
+        Path weightsFile = Path.of(args[4]);
 
         validateInputs(submissionPath, inputDirectory, outputDirectory, configFile);
 

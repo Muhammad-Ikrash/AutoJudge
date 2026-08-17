@@ -126,10 +126,10 @@ public final class DockerRunner {
 
             results.add(result);
 
-            if (result.verdict() == Verdict.MALICIOUS_CODE) {
+            if (result.verdict() == Verdict.MALICIOUS_CODE || result.verdict() == Verdict.PROCESS_LIMIT_EXCEEDED) {
                 log.warn("Aborting remaining test cases due to malicious code in test case {}", testCase.id());
                 destroyContainer(containerId);
-                results.addAll(buildErrorResults(testCases, Verdict.MALICIOUS_CODE, "Execution aborted due to malicious code", i + 1));
+                results.addAll(buildErrorResults(testCases, result.verdict(), "Execution aborted due to " + result.verdict().name(), i + 1));
                 break;
             }
         }
@@ -165,8 +165,8 @@ public final class DockerRunner {
     private void destroyContainer(String containerId) {
         if (containerId != null) {
             try {
-                containerManager.stopContainer(containerId);
-                containerManager.removeContainer(containerId);
+                // containerManager.stopContainer(containerId);
+                // containerManager.removeContainer(containerId);
             } catch (Exception e) {
                 log.warn("Error destroying container {}: {}", containerId, e.getMessage());
             }

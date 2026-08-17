@@ -39,4 +39,6 @@ public interface ContainerManager {
     ExecCMD execInDir(String id, List<String> command, String workingDir) throws DockerException;
 
     ExecCMD execInDir(String id, List<String> command, String workingDir, long timeoutSeconds) throws DockerException;
+
+    int countProcesses(String containerId) throws DockerException;
 }

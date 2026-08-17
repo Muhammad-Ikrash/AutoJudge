@@ -21,7 +21,7 @@ import java.nio.file.Path;
  * Supported commands:
  *   java -jar autojudge.jar producer <assignment-path> [--plagiarism]
  *   java -jar autojudge.jar worker
- *   java -jar autojudge.jar result-worker [reportOutputPath] [expectedCount]
+ *   java -jar autojudge.jar result-worker [reportOutputPath] [expectedCount --optional]
  */
 public final class Main {
 

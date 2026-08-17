@@ -296,4 +296,12 @@ public class DefaultContainerManager implements ContainerManager {
             throw new DockerException("Failed to execute command inside container " + id, e);
         }
     }
+
+    @Override
+    public int countProcesses(String containerId) throws DockerException {
+        ExecCMD result = exec(containerId, List.of("ls", "/proc"));
+        return (int) Arrays.stream(result.getStdout().split("\\R"))
+                .filter(s -> s.matches("\\d+"))
+                .count();
+    }
 }

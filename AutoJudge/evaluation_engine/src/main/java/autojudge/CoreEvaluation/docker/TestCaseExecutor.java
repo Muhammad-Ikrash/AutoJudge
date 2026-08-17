@@ -8,6 +8,7 @@ import autojudge.CoreEvaluation.model.ExecutionResult;
 import autojudge.CoreEvaluation.model.SubmissionLayout;
 import autojudge.CoreEvaluation.model.TestCase;
 import autojudge.CoreEvaluation.model.Verdict;
+import autojudge.CoreEvaluation.docker.ProcessLimitCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,19 +28,22 @@ public class TestCaseExecutor {
     private final ContainerManager containerManager;
     private final MaliciousCodeDetector maliciousCodeDetector;
     private final OutputValidator outputValidator;
+    private final ProcessLimitCheck processLimitCheck;
 
     public TestCaseExecutor(ContainerManager containerManager) {
-        this(containerManager, new MaliciousCodeDetector(), new OutputValidator());
+        this(containerManager, new MaliciousCodeDetector(), new OutputValidator(), new ProcessLimitCheck());
     }
 
     public TestCaseExecutor(
             ContainerManager containerManager,
             MaliciousCodeDetector maliciousCodeDetector,
-            OutputValidator outputValidator
+            OutputValidator outputValidator,
+            ProcessLimitCheck processLimitCheck
     ) {
         this.containerManager = Objects.requireNonNull(containerManager, "containerManager must not be null");
         this.maliciousCodeDetector = Objects.requireNonNull(maliciousCodeDetector, "maliciousCodeDetector must not be null");
         this.outputValidator = Objects.requireNonNull(outputValidator, "outputValidator must not be null");
+        this.processLimitCheck = Objects.requireNonNull(processLimitCheck, "processLimitCheck must not be null");
     }
 
     public ExecutionResult executeSingleTestCase(
@@ -79,6 +83,21 @@ public class TestCaseExecutor {
                     "",
                     "",
                     "Malicious code detected: created unauthorized file(s) " + unauthorizedFiles,
+                    -1,
+                    executionTime,
+                    0
+            );
+        }
+
+        int processCount = containerManager.countProcesses(containerId);
+        if (processLimitCheck.checkProcessLimit(processCount)) {
+            cleanupTestcaseFile(containerId, testCaseContainerPath);
+            return new ExecutionResult(
+                    testCase.id(),
+                    Verdict.PROCESS_LIMIT_EXCEEDED,
+                    "",
+                    "",
+                    "Process Limit Reached: created unauthorized process(es)",
                     -1,
                     executionTime,
                     0
