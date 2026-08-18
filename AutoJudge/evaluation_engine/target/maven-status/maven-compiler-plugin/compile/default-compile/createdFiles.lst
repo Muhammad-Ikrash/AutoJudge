@@ -32,6 +32,7 @@ autojudge/CoreEvaluation/grading/GradingService$EvaluationGrade.class
 autojudge/PlagiarismDetection/model/SimilarityPair.class
 autojudge/CoreEvaluation/compiler/SubmissionScanner.class
 autojudge/CoreEvaluation/config/DockerConstants.class
+autojudge/CoreEvaluation/docker/ProcessLimitCheck.class
 autojudge/CoreEvaluation/model/Assignment$ResourceLimits.class
 autojudge/CoreEvaluation/docker/ContainerManager.class
 autojudge/CoreEvaluation/docker/MaliciousCodeDetector.class

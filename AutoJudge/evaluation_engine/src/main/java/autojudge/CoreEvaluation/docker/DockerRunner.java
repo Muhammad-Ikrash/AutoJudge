@@ -165,8 +165,8 @@ public final class DockerRunner {
     private void destroyContainer(String containerId) {
         if (containerId != null) {
             try {
-                // containerManager.stopContainer(containerId);
-                // containerManager.removeContainer(containerId);
+                containerManager.stopContainer(containerId);
+                containerManager.removeContainer(containerId);
             } catch (Exception e) {
                 log.warn("Error destroying container {}: {}", containerId, e.getMessage());
             }

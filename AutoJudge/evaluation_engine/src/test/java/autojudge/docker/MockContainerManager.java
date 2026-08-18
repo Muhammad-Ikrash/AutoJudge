@@ -106,4 +106,10 @@ public class MockContainerManager implements ContainerManager {
     public ExecCMD execInDir(String id, List<String> command, String workingDir, long timeoutSeconds) throws DockerException {
         return execResponse;
     }
+
+    @Override
+    public int countProcesses(String id) throws DockerException {
+        return 1;
+    }
+
 }
