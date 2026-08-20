@@ -18,7 +18,7 @@ Instead of manually downloading submissions and checking outputs, AutoJudge aims
 
 ---
 
-Current Progress : Scraped GCR using Google API for Classroom and Drive
+Current Progress : Plagiarism Added
 
 ---
 
@@ -68,7 +68,6 @@ AutoJudge/
 │
 ├── classroom_scraper/
 ├── evaluation_engine/
-├── plagiarism_checker/
 ├── backend/
 ├── frontend/
 ├── assignments/
