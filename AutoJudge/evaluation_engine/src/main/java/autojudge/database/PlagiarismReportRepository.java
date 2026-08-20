@@ -37,4 +37,22 @@ public class PlagiarismReportRepository {
             throw new RuntimeException("Failed to save plagiarism report", e);
         }
     }
+
+    public PlagiarismReport findByAssignmentIdAndThreshold(String assignmentId, double threshold) {
+        String sql = "SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC";
+        java.util.List<SimilarityPair> pairs = new java.util.ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, assignmentId);
+            pstmt.setDouble(2, threshold);
+            try (java.sql.ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    pairs.add(new SimilarityPair(rs.getString("submission_a"), rs.getString("submission_b"), rs.getDouble("similarity")));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to read plagiarism report", e);
+        }
+        return new PlagiarismReport(assignmentId, pairs);
+    }
 }

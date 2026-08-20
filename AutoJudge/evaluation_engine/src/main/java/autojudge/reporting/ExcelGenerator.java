@@ -87,4 +87,51 @@ public class ExcelGenerator {
             log.info("Excel report generated successfully at {}", outputPath);
         }
     }
+
+    public void generatePlagiarismReport(autojudge.PlagiarismDetection.model.PlagiarismReport report, Path outputPath) throws IOException {
+        log.info("Generating Plagiarism Excel report with {} pair(s) at {}", report.similarities().size(), outputPath);
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Plagiarism Report");
+
+            // Header Style
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(IndexedColors.LIGHT_CORNFLOWER_BLUE.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            String[] headers = {"Assignment ID", "Submission A", "Submission B", "Similarity (%)"};
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            int rowIndex = 1;
+            for (autojudge.PlagiarismDetection.model.SimilarityPair pair : report.similarities()) {
+                Row row = sheet.createRow(rowIndex++);
+                row.createCell(0).setCellValue(report.assignmentId() != null ? report.assignmentId() : "");
+                row.createCell(1).setCellValue(pair.submissionA() != null ? pair.submissionA() : "");
+                row.createCell(2).setCellValue(pair.submissionB() != null ? pair.submissionB() : "");
+                row.createCell(3).setCellValue(pair.similarity());
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            if (outputPath.getParent() != null) {
+                java.nio.file.Files.createDirectories(outputPath.getParent());
+            }
+
+            try (FileOutputStream out = new FileOutputStream(outputPath.toFile())) {
+                workbook.write(out);
+            }
+
+            log.info("Plagiarism Excel report generated successfully at {}", outputPath);
+        }
+    }
 }

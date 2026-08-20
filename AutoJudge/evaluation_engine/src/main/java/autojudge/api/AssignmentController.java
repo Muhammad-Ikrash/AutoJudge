@@ -23,6 +23,7 @@ import java.util.Map;
 public class AssignmentController {
 
     private final SubmissionResultRepository repository = new SubmissionResultRepository();
+    private final autojudge.database.PlagiarismReportRepository plagiarismRepository = new autojudge.database.PlagiarismReportRepository();
     private final ExcelGenerator excelGenerator = new ExcelGenerator();
 
     @PostMapping("/{id}/grade")
@@ -74,6 +75,42 @@ public class AssignmentController {
             
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"report_" + assignmentId + ".xlsx\"")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(resource);
+                    
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/{id}/plagiarism")
+    public ResponseEntity<autojudge.PlagiarismDetection.model.PlagiarismReport> getPlagiarismReport(
+            @PathVariable("id") String assignmentId,
+            @RequestParam(value = "threshold", defaultValue = "0.0") double threshold) {
+        try {
+            return ResponseEntity.ok(plagiarismRepository.findByAssignmentIdAndThreshold(assignmentId, threshold));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/{id}/plagiarism/report")
+    public ResponseEntity<Resource> getPlagiarismExcelReport(
+            @PathVariable("id") String assignmentId,
+            @RequestParam(value = "threshold", defaultValue = "0.0") double threshold) {
+        try {
+            autojudge.PlagiarismDetection.model.PlagiarismReport report = plagiarismRepository.findByAssignmentIdAndThreshold(assignmentId, threshold);
+            Path tempFile = Files.createTempFile("plagiarism_" + assignmentId, ".xlsx");
+            
+            excelGenerator.generatePlagiarismReport(report, tempFile);
+            
+            byte[] data = Files.readAllBytes(tempFile);
+            Files.deleteIfExists(tempFile);
+            
+            ByteArrayResource resource = new ByteArrayResource(data);
+            
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"plagiarism_" + assignmentId + ".xlsx\"")
                     .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                     .body(resource);
                     
