@@ -1,7 +1,6 @@
 package autojudge.MessageBroker;
 
 import autojudge.CoreEvaluation.model.SubmissionResult;
-import autojudge.reporting.ExcelGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;

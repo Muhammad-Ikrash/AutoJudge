@@ -29,6 +29,7 @@ autojudge/CoreEvaluation/docker/CompilationOrchestrator.class
 autojudge/CoreEvaluation/model/Submission.class
 autojudge/CoreEvaluation/loader/CommandLineParser.class
 autojudge/CoreEvaluation/compiler/CompileCommandBuilder.class
+autojudge/api/config/AppConfig.class
 autojudge/Main.class
 autojudge/CoreEvaluation/grading/GradingService$EvaluationGrade.class
 autojudge/PlagiarismDetection/model/SimilarityPair.class

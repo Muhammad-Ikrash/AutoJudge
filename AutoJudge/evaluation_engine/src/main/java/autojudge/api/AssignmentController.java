@@ -22,9 +22,20 @@ import java.util.Map;
 @RequestMapping("/api/assignments")
 public class AssignmentController {
 
-    private final SubmissionResultRepository repository = new SubmissionResultRepository();
-    private final autojudge.database.PlagiarismReportRepository plagiarismRepository = new autojudge.database.PlagiarismReportRepository();
-    private final ExcelGenerator excelGenerator = new ExcelGenerator();
+    private final SubmissionResultRepository repository;
+    private final autojudge.database.PlagiarismReportRepository plagiarismRepository;
+    private final ExcelGenerator excelGenerator;
+    private final EvaluationProducer producer;
+
+    public AssignmentController(SubmissionResultRepository repository,
+                                autojudge.database.PlagiarismReportRepository plagiarismRepository,
+                                ExcelGenerator excelGenerator,
+                                EvaluationProducer producer) {
+        this.repository = repository;
+        this.plagiarismRepository = plagiarismRepository;
+        this.excelGenerator = excelGenerator;
+        this.producer = producer;
+    }
 
     @PostMapping("/{id}/grade")
     public ResponseEntity<Map<String, Object>> gradeAssignment(
@@ -33,9 +44,16 @@ public class AssignmentController {
             @RequestParam(value = "plagiarism", defaultValue = "false") boolean enablePlagiarism) {
         
         try {
-            Path assignmentPath = Path.of(assignmentPathStr);
-            RabbitMQConnection connection = new RabbitMQConnection();
-            EvaluationProducer producer = new EvaluationProducer(connection);
+            Path assignmentPath = Path.of(assignmentPathStr).toAbsolutePath().normalize();
+            Path expectedRoot = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
+            
+            if (!assignmentPath.startsWith(expectedRoot)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid assignment path: must be within expected root directory."));
+            }
+            if (!Files.exists(assignmentPath) || !Files.isDirectory(assignmentPath)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Assignment path does not exist or is not a directory: " + assignmentPathStr));
+            }
+
             
             int count = producer.produceEvaluationJobs(assignmentPath, enablePlagiarism);
             
