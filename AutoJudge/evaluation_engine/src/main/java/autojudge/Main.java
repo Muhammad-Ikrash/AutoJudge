@@ -21,7 +21,8 @@ import java.nio.file.Path;
  * Supported commands:
  *   java -jar autojudge.jar producer <assignment-path> [--plagiarism]
  *   java -jar autojudge.jar worker
- *   java -jar autojudge.jar result-worker [reportOutputPath] [expectedCount --optional]
+ *   java -jar autojudge.jar result-worker [expectedCount --optional]
+ *   java -jar autojudge.jar api
  */
 public final class Main {
 
@@ -54,6 +55,9 @@ public final class Main {
                     break;
                 case "result-worker":
                     startResultWorker(args);
+                    break;
+                case "api":
+                    startApi(args);
                     break;
                 default:
                     evaluateFromCmd(args);
@@ -89,15 +93,17 @@ public final class Main {
     }
 
     public static void startResultWorker(String[] args) throws Exception {
-        Path reportOutputPath = Path.of(args.length > 1 ? args[1] : "results.xlsx");
-        int expectedCount = args.length > 2 ? Integer.parseInt(args[2]) : 0;
 
-        log.info("Starting AutoJudge Result Worker mode (Output: {}, Expected Count: {})...", reportOutputPath, expectedCount);
+        log.info("Starting AutoJudge Result Worker mode");
         RabbitMQConnection rabbitMQConnection = new RabbitMQConnection();
-        ExcelGenerator excelGenerator = new ExcelGenerator();
 
-        ResultWorker worker = new ResultWorker(rabbitMQConnection, excelGenerator);
-        worker.startListening(reportOutputPath, expectedCount);
+        ResultWorker worker = new ResultWorker(rabbitMQConnection);
+        worker.startListening();
+    }
+
+    public static void startApi(String[] args) {
+        log.info("Starting AutoJudge API Server...");
+        org.springframework.boot.SpringApplication.run(autojudge.api.AutoJudgeApplication.class, args);
     }
 
     public static void evaluateFromCmd(String[] args) throws Exception {
@@ -120,6 +126,7 @@ public final class Main {
         System.err.println("AutoJudge Commands:");
         System.err.println("  Producer mode: java -jar autojudge.jar producer <assignment-path> [--plagiarism]");
         System.err.println("  Worker mode:   java -jar autojudge.jar worker");
-        System.err.println("  Result Worker: java -jar autojudge.jar result-worker [reportOutputPath] [expectedCount]");
+        System.err.println("  Result Worker: java -jar autojudge.jar result-worker [expectedCount]");
+        System.err.println("  API Server:    java -jar autojudge.jar api");
     }
 }

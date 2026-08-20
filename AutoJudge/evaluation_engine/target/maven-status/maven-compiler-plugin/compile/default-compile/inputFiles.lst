@@ -55,6 +55,8 @@
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/PlagiarismDetection/model/PlagiarismReport.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/PlagiarismDetection/model/SimilarityPair.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/PlagiarismDetection/service/PlagiarismAnalysisService.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/api/AssignmentController.java
+/home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/api/AutoJudgeApplication.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/database/DatabaseConnection.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/database/DatabaseInitializer.java
 /home/ikrash-nub/UserData/AutoJudge/AutoJudge/evaluation_engine/src/main/java/autojudge/database/PlagiarismReportRepository.java

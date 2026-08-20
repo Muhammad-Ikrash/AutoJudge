@@ -36,6 +36,7 @@ autojudge/CoreEvaluation/compiler/SubmissionScanner.class
 autojudge/CoreEvaluation/config/DockerConstants.class
 autojudge/CoreEvaluation/docker/ProcessLimitCheck.class
 autojudge/database/DatabaseInitializer.class
+autojudge/api/AutoJudgeApplication.class
 autojudge/CoreEvaluation/model/Assignment$ResourceLimits.class
 autojudge/CoreEvaluation/docker/ContainerManager.class
 autojudge/CoreEvaluation/docker/MaliciousCodeDetector.class
@@ -46,6 +47,7 @@ autojudge/CoreEvaluation/config/ContainerConfig.class
 autojudge/MessageBroker/EvaluationWorker.class
 autojudge/CoreEvaluation/model/Verdict.class
 autojudge/CoreEvaluation/grading/ScoreCalculator.class
+autojudge/api/AssignmentController.class
 autojudge/CoreEvaluation/model/ExecutionResult.class
 autojudge/pipeline/PipelineOrchestrator.class
 autojudge/database/SubmissionResultRepository.class

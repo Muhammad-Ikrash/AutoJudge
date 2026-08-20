@@ -27,14 +27,12 @@ public class ResultWorker {
     private static final Logger log = LoggerFactory.getLogger(ResultWorker.class);
 
     private final RabbitMQConnection rabbitMQConnection;
-    private final ExcelGenerator excelGenerator;
     private final ObjectMapper objectMapper;
     private final Map<String, List<SubmissionResult>> batchResultsMap = new ConcurrentHashMap<>();
     private final autojudge.database.SubmissionResultRepository resultRepository = new autojudge.database.SubmissionResultRepository();
 
-    public ResultWorker(RabbitMQConnection rabbitMQConnection, ExcelGenerator excelGenerator) {
+    public ResultWorker(RabbitMQConnection rabbitMQConnection) {
         this.rabbitMQConnection = Objects.requireNonNull(rabbitMQConnection, "rabbitMQConnection must not be null");
-        this.excelGenerator = Objects.requireNonNull(excelGenerator, "excelGenerator must not be null");
         this.objectMapper = new ObjectMapper();
     }
 
@@ -43,7 +41,7 @@ public class ResultWorker {
         return results != null ? new ArrayList<>(results) : Collections.emptyList();
     }
 
-    public void startListening(Path defaultReportPath, int fallbackExpectedCount) throws IOException {
+    public void startListening() throws IOException {
         try {
             Channel channel = rabbitMQConnection.createChannel();
             channel.basicQos(1);
@@ -57,7 +55,7 @@ public class ResultWorker {
                 try {
                     SubmissionResult result = objectMapper.readValue(messageJson, SubmissionResult.class);
                     String batchId = result.batchId() != null ? result.batchId() : "default-batch";
-                    int expectedCount = result.totalSubmissionsInBatch() > 0 ? result.totalSubmissionsInBatch() : fallbackExpectedCount;
+                    int expectedCount = result.totalSubmissionsInBatch() > 0 ? result.totalSubmissionsInBatch() : 0;
 
                     log.info("ResultWorker received SubmissionResult for studentId={}, verdict={}, batchId={}",
                             result.studentId(), result.verdict(), batchId);
@@ -71,10 +69,8 @@ public class ResultWorker {
                     channel.basicAck(deliveryTag, false);
 
                     if (expectedCount > 0 && batchList.size() >= expectedCount) {
-                        log.info("Batch '{}' complete ({}/{} results). Generating Excel report at {}",
-                                batchId, batchList.size(), expectedCount, defaultReportPath);
-
-                        excelGenerator.generateReport(new ArrayList<>(batchList), defaultReportPath);
+                        log.info("Batch '{}' complete ({}/{} results).",
+                                batchId, batchList.size(), expectedCount);
                     }
                 } catch (Exception e) {
                     log.error("Failed to process SubmissionResult tag={}", deliveryTag, e);
