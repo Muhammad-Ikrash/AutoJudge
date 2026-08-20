@@ -29,6 +29,9 @@ public class EvaluationWorker {
     private final ResultPublisher resultPublisher;
     private final ObjectMapper objectMapper;
 
+    private volatile Channel activeChannel;
+    private volatile String consumerTag;
+
     public EvaluationWorker(
             RabbitMQConnection rabbitMQConnection,
             EvaluationEngine evaluationEngine,
@@ -67,14 +70,37 @@ public class EvaluationWorker {
                 }
             };
 
-            channel.basicConsume(RabbitMQConnection.EVALUATION_QUEUE, false, deliverCallback, consumerTag -> {
-                log.info("Consumer cancelled: {}", consumerTag);
+            this.consumerTag = channel.basicConsume(RabbitMQConnection.EVALUATION_QUEUE, false, deliverCallback, tag -> {
+                log.info("Consumer cancelled: {}", tag);
             });
+            this.activeChannel = channel;
 
         } catch (Exception e) {
             log.error("Failed to start EvaluationWorker listener", e);
             throw new IOException("Failed to start EvaluationWorker", e);
         }
+    }
+
+    /**
+     * Gracefully stops this worker. The in-flight job (if any) completes naturally;
+     * no new deliveries will arrive after this returns.
+     */
+    public void stop() {
+        try {
+            if (activeChannel != null && activeChannel.isOpen()) {
+                log.info("Stopping EvaluationWorker — cancelling consumer '{}' and closing channel.", consumerTag);
+                if (consumerTag != null && !consumerTag.isBlank()) {
+                    activeChannel.basicCancel(consumerTag);
+                }
+                activeChannel.close();
+            }
+        } catch (Exception e) {
+            log.warn("Error while stopping EvaluationWorker channel", e);
+        }
+    }
+
+    public boolean isRunning() {
+        return activeChannel != null && activeChannel.isOpen();
     }
 
     private void handleFailure(Channel channel, long deliveryTag, EvaluationJob job, Exception cause) {

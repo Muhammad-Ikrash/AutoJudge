@@ -35,6 +35,7 @@ autojudge/CoreEvaluation/grading/GradingService$EvaluationGrade.class
 autojudge/PlagiarismDetection/model/SimilarityPair.class
 autojudge/CoreEvaluation/compiler/SubmissionScanner.class
 autojudge/CoreEvaluation/config/DockerConstants.class
+autojudge/api/WorkerManager.class
 autojudge/CoreEvaluation/docker/ProcessLimitCheck.class
 autojudge/database/DatabaseInitializer.class
 autojudge/api/AutoJudgeApplication.class
@@ -65,6 +66,7 @@ autojudge/CoreEvaluation/util/FileUtils.class
 autojudge/PlagiarismDetection/model/PlagiarismReport.class
 autojudge/CoreEvaluation/loader/TestCaseFileProcessor.class
 autojudge/CoreEvaluation/model/ExecCMD.class
+autojudge/api/WorkerController.class
 autojudge/CoreEvaluation/docker/DockerRunner.class
 autojudge/CoreEvaluation/grading/GradingOrchestrator.class
 autojudge/CoreEvaluation/util/JsonUtils.class
