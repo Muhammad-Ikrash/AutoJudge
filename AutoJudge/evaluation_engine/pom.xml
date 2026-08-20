@@ -15,6 +15,14 @@
     </properties>
 
     <dependencies>
+
+        <!-- Source: https://mvnrepository.com/artifact/com.h2database/h2 -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.4.240</version>
+            <scope>runtime</scope>
+        </dependency>
         <!-- JPlag Core Engine & Languages -->
         <dependency>
             <groupId>de.jplag</groupId>

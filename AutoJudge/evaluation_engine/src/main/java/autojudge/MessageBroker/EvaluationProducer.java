@@ -59,10 +59,20 @@ public class EvaluationProducer {
         String detectedLanguage = detectLanguageFromSubmissions(submissionPaths);
         log.info("Auto-detected programming language for assignment '{}': {}", assignmentId, detectedLanguage);
 
+        // Initialize Database Schema
+        new autojudge.database.DatabaseInitializer().initialize();
+
         // Perform optional plagiarism detection if requested
         if (enablePlagiarism) {
             PipelineOrchestrator pipeline = new PipelineOrchestrator();
-            pipeline.processPlagiarismStage(assignmentId, assignmentPath, detectedLanguage, true);
+            java.util.Optional<autojudge.PlagiarismDetection.model.PlagiarismReport> reportOpt = 
+                pipeline.processPlagiarismStage(assignmentId, assignmentPath, detectedLanguage, true);
+            
+            reportOpt.ifPresent(report -> {
+                autojudge.database.PlagiarismReportRepository repo = new autojudge.database.PlagiarismReportRepository();
+                repo.save(report);
+                log.info("Saved plagiarism report to database for assignment '{}'", assignmentId);
+            });
         }
 
         try (Channel channel = rabbitMQConnection.createChannel()) {

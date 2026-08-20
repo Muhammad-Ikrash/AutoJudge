@@ -30,6 +30,7 @@ public class ResultWorker {
     private final ExcelGenerator excelGenerator;
     private final ObjectMapper objectMapper;
     private final Map<String, List<SubmissionResult>> batchResultsMap = new ConcurrentHashMap<>();
+    private final autojudge.database.SubmissionResultRepository resultRepository = new autojudge.database.SubmissionResultRepository();
 
     public ResultWorker(RabbitMQConnection rabbitMQConnection, ExcelGenerator excelGenerator) {
         this.rabbitMQConnection = Objects.requireNonNull(rabbitMQConnection, "rabbitMQConnection must not be null");
@@ -63,6 +64,10 @@ public class ResultWorker {
 
                     List<SubmissionResult> batchList = batchResultsMap.computeIfAbsent(batchId, k -> Collections.synchronizedList(new ArrayList<>()));
                     batchList.add(result);
+                    
+                    // Persist the result to H2 database
+                    resultRepository.save(result);
+                    
                     channel.basicAck(deliveryTag, false);
 
                     if (expectedCount > 0 && batchList.size() >= expectedCount) {
