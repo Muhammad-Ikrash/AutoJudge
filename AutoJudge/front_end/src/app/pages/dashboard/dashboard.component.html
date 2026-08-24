@@ -1,0 +1,88 @@
+<app-navbar />
+
+    <div class="page">
+      <!-- Breadcrumb + title -->
+      <div class="page-header">
+        <span class="breadcrumb">01 · overview</span>
+        <h1>Dashboard</h1>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="stat-grid">
+        <div class="card stat-card">
+          <div class="stat-label">Workers online</div>
+          <div class="stat-value">{{ workerStatus().totalEvaluationWorkers }}</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label">Result worker</div>
+          <div class="stat-value-row">
+            <span class="dot" [class.dot-green]="workerStatus().resultWorkerRunning"
+                                [class.dot-grey]="!workerStatus().resultWorkerRunning"></span>
+            <span class="stat-value-sm">{{ workerStatus().resultWorkerRunning ? 'Running' : 'Stopped' }}</span>
+          </div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label">Queued jobs</div>
+          <div class="stat-value">{{ queuedJobs() }}</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label">Last batch</div>
+          <div class="stat-value-sm fw-bold">{{ lastBatch() }}</div>
+        </div>
+      </div>
+
+      <!-- Worker pool -->
+      <div class="card worker-pool-card">
+        <div class="wp-header">
+          <span class="wp-title">Worker pool</span>
+          <span class="wp-meta mono">pids-limit 100 · timeout 2s</span>
+        </div>
+
+        <div class="slider-row">
+          <button class="icon-btn" (click)="decrementWorkers()">−</button>
+          <input
+            id="worker-slider"
+            type="range"
+            min="0"
+            max="20"
+            [(ngModel)]="workerSlider"
+            class="slider"
+          />
+          <button class="icon-btn" (click)="incrementWorkers()">+</button>
+          <span class="slider-value">{{ workerSlider }}</span>
+        </div>
+
+        <div class="wp-actions">
+          <div class="btn-group">
+            <button class="btn btn-secondary" (click)="addWorker()" [disabled]="loading()">Add worker</button>
+            <button class="btn btn-secondary" (click)="removeWorker()" [disabled]="loading()">Remove worker</button>
+          </div>
+          <button class="btn btn-accent" (click)="startEverything()" [disabled]="loading()">
+            Start everything ↗
+          </button>
+        </div>
+      </div>
+
+      <!-- Active workers table -->
+      <div class="card">
+        <div class="table-header-row">
+          <span class="table-title">Active workers</span>
+        </div>
+        <table class="data-table">
+          <tbody>
+            @for (w of activeWorkers(); track w.name) {
+              <tr>
+                <td class="mono col-name">{{ w.name }}</td>
+                <td class="col-task text-secondary">{{ w.task }}</td>
+                <td class="col-status">
+                  <span class="dot" [class.dot-green]="w.active" [class.dot-grey]="!w.active"></span>
+                </td>
+              </tr>
+            }
+            @empty {
+              <tr><td colspan="3" class="empty-row">No active workers</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>

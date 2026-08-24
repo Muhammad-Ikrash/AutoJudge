@@ -1,0 +1,62 @@
+    .page { max-width: 1100px; margin: 0 auto; padding: 28px 24px 48px; }
+    .page-header { margin-bottom: 20px; }
+    .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .breadcrumb { font-size: 11px; color: var(--text-muted); }
+    h1 { font-size: 22px; font-weight: 700; margin: 2px 0 0; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+    .controls-card { margin-bottom: 16px; }
+    .controls-row { display: flex; align-items: flex-end; gap: 12px; }
+    .control-group { flex: 1; }
+    .form-label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+    .form-input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: 13px;
+      background: #fff;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .form-input:focus { border-color: var(--accent); }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
+    .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+    .stat-value { font-size: 24px; font-weight: 700; }
+    .stat-value-sm { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-top: 2px; }
+    .fw-bold { font-weight: 700; }
+    .red { color: var(--red); }
+
+    .table-card { padding: 0; overflow: hidden; }
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table thead tr { border-bottom: 1px solid var(--border); }
+    .data-table th { padding: 10px 16px; text-align: left; font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+    .data-table tbody tr { border-bottom: 1px solid var(--border); }
+    .data-table tbody tr:last-child { border-bottom: none; }
+    .data-table td { padding: 11px 16px; font-size: 13px; }
+    .mono { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; }
+    .empty-row { text-align: center; color: var(--text-muted); padding: 24px !important; }
+
+    .sim-row { display: flex; align-items: center; gap: 10px; }
+    .sim-bar-track { flex: 1; height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+    .sim-bar-fill { height: 100%; border-radius: 3px; }
+    .sim-bar-low { background: var(--orange); }
+    .sim-bar-high { background: var(--red); }
+    .sim-pct { min-width: 42px; text-align: right; font-size: 12px; color: var(--text-secondary); }
+
+    .risk-badge { display: inline-block; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; }
+    .risk-medium { background: var(--orange-light); color: var(--orange); }
+    .risk-high { background: var(--red-light); color: var(--red); }
+
+    .btn { padding: 8px 14px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; border: 1px solid var(--border); transition: background 0.15s; }
+    .btn-secondary { background: #fff; color: var(--text-primary); }
+    .btn-secondary:hover { background: var(--bg); }
+    .btn-accent { background: transparent; color: var(--accent); border-color: var(--accent); align-self: flex-end; }
+    .btn-accent:hover { background: var(--accent-light); }
+
+    @media (max-width: 700px) {
+      .stat-grid { grid-template-columns: repeat(2,1fr); }
+      .controls-row { flex-direction: column; }
+    }
