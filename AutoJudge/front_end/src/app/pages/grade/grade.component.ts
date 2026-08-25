@@ -23,10 +23,11 @@ export class GradeComponent implements OnInit, OnDestroy {
   assignmentPath = '';
   grading = signal(false);
   showStatus = signal(false);
-  batchId = signal('7f2a3c');
-  completedJobs = signal(23);
-  totalJobs = signal(45);
-  progressPct = signal(51);
+  batchId = signal('');
+  completedJobs = signal(0);
+  totalJobs = signal(0);
+  progressPct = signal(0);
+  gradeError = signal<string | null>(null);
 
   private pollSub?: Subscription;
 
@@ -54,14 +55,15 @@ export class GradeComponent implements OnInit, OnDestroy {
 
     this.api.gradeAssignment(this.assignmentId(), this.assignmentPath).subscribe({
       next: (r: GradeResponse) => {
-        this.totalJobs.set(r.jobsProduced || 45);
-        this.batchId.set(r.assignmentId.slice(-6) || '7f2a3c');
+        this.totalJobs.set(r.jobsProduced || 0);
+        this.batchId.set(r.assignmentId || this.assignmentId());
+        this.gradeError.set(null);
         this.startPolling();
       },
       error: () => {
-        // Demo mode: simulate grading
-        this.totalJobs.set(45);
-        this.startPolling();
+        this.grading.set(false);
+        this.showStatus.set(false);
+        this.gradeError.set('Failed to submit grading job. Check that the backend is running and the path is correct.');
       }
     });
   }

@@ -1,0 +1,48 @@
+2026-08-24 21:57:44.428294+05:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "TESTCASE_RESULTS" not found (this database is empty); SQL statement:
+SELECT * FROM testcase_results WHERE assignment_id = ? [42104-240]
+2026-08-24 21:57:45.501155+05:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
+SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]
+2026-08-24 21:57:46.214807+05:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "TESTCASE_RESULTS" not found (this database is empty); SQL statement:
+SELECT * FROM testcase_results WHERE assignment_id = ? [42104-240]
+2026-08-24 21:57:47.979457+05:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "TESTCASE_RESULTS" not found (this database is empty); SQL statement:
+SELECT * FROM testcase_results WHERE assignment_id = ? [42104-240]
+2026-08-24 21:57:48.699990+05:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
+SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]
+2026-08-24 21:57:49.783609+05:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "TESTCASE_RESULTS" not found (this database is empty); SQL statement:
+SELECT * FROM testcase_results WHERE assignment_id = ? [42104-240]
+2026-08-25 10:06:07.200823+05:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
+SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]
+2026-08-25 10:11:52.239816+05:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
+SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]
+2026-08-25 10:11:55.772322+05:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
+SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]
+2026-08-25 10:11:56.497974+05:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
+SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]
+2026-08-25 10:11:57.633944+05:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
+SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]
+2026-08-25 10:11:58.247567+05:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
+SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]
+2026-08-25 10:11:58.981651+05:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
+SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]
+2026-08-25 10:12:02.825347+05:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
+SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]
+2026-08-25 10:12:03.288292+05:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
+SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]
+2026-08-25 10:13:25.848421+05:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
+SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]

@@ -158,6 +158,75 @@ def get_student_display_name(
     return full_name
 
 
+def get_student_email(
+    classroom_service: Resource,
+    user_id: str,
+    email_cache: Dict[str, str]
+) -> str:
+    """Resolves a Classroom user ID to the student's email address, caching results.
+
+    Args:
+        classroom_service: Authenticated Google Classroom service
+        user_id: Unique user ID
+        email_cache: Dictionary cache for user ID to email mappings
+
+    Returns:
+        str: Student email address, or raw user ID as fallback
+    """
+    if not user_id:
+        return "unknown@unknown"
+
+    if user_id in email_cache:
+        return email_cache[user_id]
+
+    try:
+        profile = classroom_service.userProfiles().get(userId=user_id).execute()
+        email = profile.get("emailAddress", user_id)
+    except Exception as e:
+        logger.warning("Could not resolve email for user_id '%s': %s", user_id, e)
+        email = user_id
+
+    email_cache[user_id] = email
+    return email
+
+
+def parse_folder_name_from_email(email: str) -> str:
+    """Derives a student folder name from an institutional email address.
+
+    Expects the local part of the email to follow the pattern ``YXXXXXX``
+    where Y is a single alphabetic character and X represents digits
+    (e.g. ``L123456@fast.edu.pk``).  The resulting folder name follows
+    the format ``XXY-XXXX`` (e.g. ``12L-3456``):
+
+    * Positions 0-1 : first two digits
+    * Position  2   : Y (forced to upper-case)
+    * Dash separator
+    * Positions 3-6 : remaining four digits
+
+    If the local part does not match the expected pattern the sanitized
+    local part (or full email) is returned as-is.
+
+    Args:
+        email: Student email in the format ``YXXXXXX@domain``
+
+    Returns:
+        str: Folder name in ``XXY-XXXX`` format, or a sanitized fallback
+    """
+    local = email.split("@")[0]
+    match = re.fullmatch(r"([A-Za-z])(\d{6})", local)
+    if match:
+        char_y = match.group(1).upper()
+        digits = match.group(2)          # 6 digits
+        return f"{digits[0:2]}{char_y}-{digits[2:6]}"
+
+    logger.warning(
+        "Email local part '%s' does not match expected pattern YXXXXXX; "
+        "using sanitized local part as folder name.",
+        local,
+    )
+    return sanitize(local)
+
+
 def list_courses(classroom_service: Resource) -> List[Dict[str, Any]]:
     """Lists all active courses where the authenticated user is a teacher.
 
@@ -367,18 +436,18 @@ def main(download_root: str = DEFAULT_DOWNLOAD_ROOT) -> None:
     assignment_root = os.path.join(download_root, course_name, assignment_name)
     os.makedirs(assignment_root, exist_ok=True)
 
-    name_cache: Dict[str, str] = {}
+    email_cache: Dict[str, str] = {}
     total_files = 0
 
     for i, submission in enumerate(submissions, start=1):
         user_id = submission.get("userId", "")
         state = submission.get("state", "UNKNOWN")
 
-        student_name = get_student_display_name(classroom_service, course_id, user_id, name_cache)
-        student_folder_name = sanitize(f"{student_name}_{user_id[:6]}")
+        student_email = get_student_email(classroom_service, user_id, email_cache)
+        student_folder_name = parse_folder_name_from_email(student_email)
         student_folder = os.path.join(assignment_root, student_folder_name)
 
-        logger.info("[%d/%d] %s (state: %s)", i, len(submissions), student_name, state)
+        logger.info("[%d/%d] %s (state: %s)", i, len(submissions), student_email, state)
 
         if state not in ("TURNED_IN", "RETURNED"):
             logger.info("  No submission to download, skipping.")

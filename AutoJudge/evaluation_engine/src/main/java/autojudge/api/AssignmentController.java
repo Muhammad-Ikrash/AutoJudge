@@ -1,7 +1,6 @@
 package autojudge.api;
 
 import autojudge.MessageBroker.EvaluationProducer;
-import autojudge.MessageBroker.RabbitMQConnection;
 import autojudge.database.SubmissionResultRepository;
 import autojudge.CoreEvaluation.model.SubmissionResult;
 import autojudge.reporting.ExcelGenerator;
