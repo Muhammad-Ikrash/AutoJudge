@@ -26,51 +26,15 @@ export interface GradeResponse {
   message: string;
 }
 
-export interface BatchStatus {
-  completed: number;
-  total: number;
-}
-
-export interface AssignmentConfig {
-  assignmentId: string;
-  resourceLimits: {
-    timeLimitMs: number;
-    memoryLimitMb: number;
-    cpuLimit: number;
-  };
-  executionProfile: {
-    autoRemove: boolean;
-    workingDirectory: string;
-  };
-}
-
-export interface AssignmentSummary {
-  id: string;
-  submissionCount: number;
-  status: string;
-  config: AssignmentConfig | Record<string, never>;
-}
-
-export interface TestCase {
-  id: string;
-  inputFile: string;
-  outputFile: string;
-  weight: number;
-}
-
 export interface SubmissionResult {
   id?: number;
   studentId: string;
   assignmentId: string;
-  submissionId?: string;
   testCaseName?: string;
   score?: number;
   maxScore?: number;
-  passedTests?: number;
-  totalTests?: number;
   verdict: string;
   gradedAt?: string;
-  testCasesResults?: { testCaseId: string; verdict: string }[];
 }
 
 export interface PlagiarismPair {

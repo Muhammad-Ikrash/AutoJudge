@@ -1,85 +1,66 @@
-<app-navbar />
+    <app-navbar />
 
-<div class="page">
-  <!-- Header -->
-  <div class="page-header">
-    <div class="header-top">
-      <div>
-        <span class="breadcrumb">04 · GET /api/assignments/&#123;id&#125;/results</span>
-        <h1>Results — {{ assignmentId() }}</h1>
+    <div class="page">
+      <!-- Header -->
+      <div class="page-header">
+        <div class="header-top">
+          <div>
+            <span class="breadcrumb">04 · GET /api/assignments/&#123;id&#125;/results</span>
+            <h1>Results — Assignment {{ assignmentNum() }}</h1>
+            <span class="sub-info">{{ course() }} · {{ section() }}</span>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-secondary" [routerLink]="['/assignments', assignmentId(), 'rejudge']">↺ Rejudge</button>
+            <button class="btn btn-secondary" (click)="downloadReport()">↓ Download .xlsx</button>
+          </div>
+        </div>
       </div>
-      <div class="header-actions">
-        <a class="btn btn-secondary" [routerLink]="['/assignments', assignmentId(), 'rejudge']">↺ Rejudge</a>
-        <button class="btn btn-secondary" (click)="downloadReport()">↓ Download .xlsx</button>
-      </div>
-    </div>
-  </div>
 
-  @if (loading()) {
-    <div class="state-msg">Loading results…</div>
-  } @else if (error()) {
-    <div class="state-msg error">{{ error() }}</div>
-  } @else {
-    <!-- Stats -->
-    <div class="stat-grid">
-      <div class="card stat-card">
-        <div class="stat-label">Graded</div>
-        <div class="stat-value">{{ graded() }}/{{ total() }}</div>
+      <!-- Stats -->
+      <div class="stat-grid">
+        <div class="card stat-card">
+          <div class="stat-label">Graded</div>
+          <div class="stat-value">{{ graded() }}/{{ total() }}</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label">Accepted</div>
+          <div class="stat-value green">{{ accepted() }}</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label">Flagged</div>
+          <div class="stat-value red">{{ flagged() }}</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label">Avg score</div>
+          <div class="stat-value">{{ avgScore() }}%</div>
+        </div>
       </div>
-      <div class="card stat-card">
-        <div class="stat-label">Accepted</div>
-        <div class="stat-value green">{{ accepted() }}</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-label">Flagged</div>
-        <div class="stat-value red">{{ flagged() }}</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-label">Avg score</div>
-        <div class="stat-value">{{ avgScore() }}%</div>
-      </div>
-    </div>
 
-    <!-- Results table -->
-    <div class="card">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Student</th>
-            <th>Score</th>
-            <th>Passed Tests</th>
-            <th>Verdict</th>
-            <th>Graded at</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (r of results(); track r.studentId) {
+      <!-- Results table -->
+      <div class="card">
+        <table class="data-table">
+          <thead>
             <tr>
-              <td class="mono col-name">{{ r.studentId }}</td>
-              <td class="text-secondary">{{ scoreDisplay(r) }}</td>
-              <td class="text-secondary">
-                @if (r.totalTests) {
-                  <div class="mini-progress">
-                    <div class="mini-fill" [style.width.%]="(r.passedTests ?? 0) / r.totalTests! * 100"></div>
-                  </div>
-                  <span class="mini-label">{{ r.passedTests ?? 0 }}/{{ r.totalTests }}</span>
-                } @else {
-                  —
-                }
-              </td>
-              <td>
-                <span class="verdict-badge" [class]="verdictClass(r.verdict)">
-                  {{ r.verdict === 'GRADING' ? 'GRADING...' : r.verdict?.replace(/_/g, ' ') }}
-                </span>
-              </td>
-              <td class="text-secondary">{{ r.gradedAt ?? '—' }}</td>
+              <th>Student</th>
+              <th>Score</th>
+              <th>Verdict</th>
+              <th>Graded</th>
             </tr>
-          }
-          @empty {
-            <tr><td colspan="5" class="empty-state">No results yet for this assignment.</td></tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (r of results(); track r.studentId) {
+              <tr>
+                <td class="mono">{{ r.studentId }}</td>
+                <td class="text-secondary">{{ r.score != null ? r.score + '/' + r.maxScore : '—' }}</td>
+                <td>
+                  <span class="verdict-badge" [class]="verdictClass(r.verdict)">
+                    {{ r.verdict === 'GRADING' ? 'GRADING...' : r.verdict }}
+                  </span>
+                </td>
+                <td class="text-secondary">{{ r.gradedAt ?? '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
-  }
-</div>

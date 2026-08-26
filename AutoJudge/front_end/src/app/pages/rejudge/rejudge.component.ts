@@ -1,5 +1,5 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { NavbarComponent } from '../../components/navbar/navbar.component';
 import { ApiService } from '../../services/Assignment-apiservice';
 import { CommonModule } from '@angular/common';
@@ -8,7 +8,7 @@ import { FormsModule } from '@angular/forms';
 @Component({
   selector: 'app-rejudge',
   standalone: true,
-  imports: [NavbarComponent, CommonModule, FormsModule, RouterLink],
+  imports: [NavbarComponent, CommonModule, FormsModule],
   templateUrl: './rejudge.component.html',
   styleUrl: './rejudge.component.scss'
 })
@@ -16,55 +16,35 @@ export class RejudgeComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private api = inject(ApiService);
 
-  assignmentId = signal('');
-  studentId = '';
-  testCase = '';
+  assignmentId = signal('dsa-a3');
+  assignmentNum = signal('3');
+  studentId = '21i-0533';
+  testCase = 'testcase_07';
   submitting = signal(false);
-  studentSuccess = signal(false);
-  testCaseSuccess = signal(false);
-  studentError = signal<string | null>(null);
-  testCaseError = signal<string | null>(null);
 
   ngOnInit() {
-    const id = this.route.snapshot.paramMap.get('id') ?? '';
+    const id = this.route.snapshot.paramMap.get('id') ?? 'dsa-a3';
     this.assignmentId.set(id);
+    const nums: Record<string, string> = {
+      'dsa-a3': '3', 'dsa-a4': '4', 'oop-a2': '2', 'pf-a1': '1'
+    };
+    this.assignmentNum.set(nums[id] ?? id);
   }
 
   rejudgeStudent() {
-    if (!this.studentId) return;
     this.submitting.set(true);
-    this.studentSuccess.set(false);
-    this.studentError.set(null);
-
-    this.api.rejudgeByStudent(this.assignmentId(), this.studentId).subscribe({
-      next: () => {
-        this.submitting.set(false);
-        this.studentSuccess.set(true);
-        setTimeout(() => this.studentSuccess.set(false), 3000);
-      },
-      error: () => {
-        this.submitting.set(false);
-        this.studentError.set('Failed to trigger rejudge. Backend may not be available.');
-      }
-    });
+    // TODO: call backend rejudge API when implemented
+    setTimeout(() => {
+      alert(`Rejudging student ${this.studentId} for assignment ${this.assignmentId()}`);
+      this.submitting.set(false);
+    }, 500);
   }
 
   rejudgeTestCase() {
-    if (!this.testCase) return;
     this.submitting.set(true);
-    this.testCaseSuccess.set(false);
-    this.testCaseError.set(null);
-
-    this.api.rejudgeByTestCase(this.assignmentId(), this.testCase).subscribe({
-      next: () => {
-        this.submitting.set(false);
-        this.testCaseSuccess.set(true);
-        setTimeout(() => this.testCaseSuccess.set(false), 3000);
-      },
-      error: () => {
-        this.submitting.set(false);
-        this.testCaseError.set('Failed to trigger rejudge. Backend may not be available.');
-      }
-    });
+    setTimeout(() => {
+      alert(`Rejudging test case ${this.testCase} across all students for assignment ${this.assignmentId()}`);
+      this.submitting.set(false);
+    }, 500);
   }
 }

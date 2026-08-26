@@ -28,15 +28,8 @@ public class ResultWorker {
     private final ObjectMapper objectMapper;
     private final Map<String, List<SubmissionResult>> batchResultsMap = new ConcurrentHashMap<>();
     private final autojudge.database.SubmissionResultRepository resultRepository = new autojudge.database.SubmissionResultRepository();
-    private final Map<String, String> assignmentToLatestBatchMap = new ConcurrentHashMap<>();
 
     private volatile com.rabbitmq.client.Channel activeChannel;
-    private volatile boolean stopped = false;
-    private volatile String latestBatchId = "—";
-
-    public String getLatestBatchId() {
-        return latestBatchId;
-    }
 
     public ResultWorker(RabbitMQConnection rabbitMQConnection) {
         this.rabbitMQConnection = Objects.requireNonNull(rabbitMQConnection, "rabbitMQConnection must not be null");
@@ -46,18 +39,6 @@ public class ResultWorker {
     public List<SubmissionResult> getCollectedResults(String batchId) {
         List<SubmissionResult> results = batchResultsMap.get(batchId);
         return results != null ? new ArrayList<>(results) : Collections.emptyList();
-    }
-
-    public String getLatestBatchIdForAssignment(String assignmentId) {
-        return assignmentToLatestBatchMap.get(assignmentId);
-    }
-
-    public Map<String, Object> getBatchStatus(String batchId) {
-        if (batchId == null) return Map.of("completed", 0, "total", 0);
-        List<SubmissionResult> results = batchResultsMap.get(batchId);
-        if (results == null || results.isEmpty()) return Map.of("completed", 0, "total", 0);
-        int expectedCount = results.get(0).totalSubmissionsInBatch();
-        return Map.of("completed", results.size(), "total", expectedCount);
     }
 
     public void startListening() throws IOException {
@@ -79,13 +60,8 @@ public class ResultWorker {
                     log.info("ResultWorker received SubmissionResult for studentId={}, verdict={}, batchId={}",
                             result.studentId(), result.verdict(), batchId);
 
-                    latestBatchId = batchId;
-
                     List<SubmissionResult> batchList = batchResultsMap.computeIfAbsent(batchId, k -> Collections.synchronizedList(new ArrayList<>()));
                     batchList.add(result);
-                    if (result.assignmentId() != null) {
-                        assignmentToLatestBatchMap.put(result.assignmentId(), batchId);
-                    }
                     
                     // Persist the result to H2 database
                     resultRepository.save(result);
@@ -118,7 +94,6 @@ public class ResultWorker {
      * no new deliveries will arrive after this returns.
      */
     public void stop() {
-        stopped = true;
         try {
             if (activeChannel != null && activeChannel.isOpen()) {
                 log.info("Stopping ResultWorker — closing channel.");
@@ -130,8 +105,6 @@ public class ResultWorker {
     }
 
     public boolean isRunning() {
-        if (stopped) return false;
-        if (activeChannel == null) return true;
-        return activeChannel.isOpen();
+        return activeChannel != null && activeChannel.isOpen();
     }
 }

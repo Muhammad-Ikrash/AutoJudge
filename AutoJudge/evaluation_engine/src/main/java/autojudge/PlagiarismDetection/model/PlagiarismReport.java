@@ -7,5 +7,5 @@ import java.util.List;
  */
 public record PlagiarismReport(
         String assignmentId,
-        List<SimilarityPair> pairs
+        List<SimilarityPair> similarities
 ) {}

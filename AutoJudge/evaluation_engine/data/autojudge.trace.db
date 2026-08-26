@@ -46,21 +46,3 @@ SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORD
 2026-08-25 10:13:25.848421+05:00 jdbc[3]: exception
 org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
 SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]
-2026-08-25 23:53:41.418494+05:00 jdbc[3]: exception
-org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
-SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]
-2026-08-25 23:54:01.590780+05:00 jdbc[3]: exception
-org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
-SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]
-2026-08-25 23:54:17.865699+05:00 jdbc[3]: exception
-org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
-SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]
-2026-08-26 00:02:27.228571+05:00 jdbc[3]: exception
-org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
-SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]
-2026-08-26 00:02:29.052190+05:00 jdbc[3]: exception
-org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
-SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]
-2026-08-26 00:02:30.218571+05:00 jdbc[3]: exception
-org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
-SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]

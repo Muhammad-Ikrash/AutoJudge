@@ -89,7 +89,7 @@ public class ExcelGenerator {
     }
 
     public void generatePlagiarismReport(autojudge.PlagiarismDetection.model.PlagiarismReport report, Path outputPath) throws IOException {
-        log.info("Generating Plagiarism Excel report with {} pair(s) at {}", report.pairs().size(), outputPath);
+        log.info("Generating Plagiarism Excel report with {} pair(s) at {}", report.similarities().size(), outputPath);
 
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Plagiarism Report");
@@ -111,7 +111,7 @@ public class ExcelGenerator {
             }
 
             int rowIndex = 1;
-            for (autojudge.PlagiarismDetection.model.SimilarityPair pair : report.pairs()) {
+            for (autojudge.PlagiarismDetection.model.SimilarityPair pair : report.similarities()) {
                 Row row = sheet.createRow(rowIndex++);
                 row.createCell(0).setCellValue(report.assignmentId() != null ? report.assignmentId() : "");
                 row.createCell(1).setCellValue(pair.submissionA() != null ? pair.submissionA() : "");

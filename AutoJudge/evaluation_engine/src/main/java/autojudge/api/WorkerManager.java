@@ -37,18 +37,6 @@ public class WorkerManager {
     }
 
     // -----------------------------------------------------------------------
-    public RabbitMQConnection getRabbitMQConnection() {
-        return rabbitMQConnection;
-    }
-
-    public long getQueuedJobs() {
-        try {
-            return rabbitMQConnection.createChannel().messageCount(RabbitMQConnection.EVALUATION_QUEUE);
-        } catch (Exception e) {
-            return 0;
-        }
-    }
-
     // EvaluationWorker lifecycle
     // -----------------------------------------------------------------------
 
@@ -150,10 +138,6 @@ public class WorkerManager {
 
     public boolean isResultWorkerRunning() {
         return resultWorker != null && resultWorker.isRunning();
-    }
-
-    public ResultWorker getResultWorker() {
-        return resultWorker;
     }
 
     // -----------------------------------------------------------------------

@@ -1,127 +1,95 @@
 .page {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 28px 24px 48px;
-}
-.page-header { margin-bottom: 20px; }
-.breadcrumb { font-size: 11px; color: var(--text-muted); }
-h1 { font-size: 22px; font-weight: 700; margin: 2px 0 0; }
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 24px 48px;
+    }
+    .page-header { margin-bottom: 20px; }
+    .breadcrumb { font-size: 11px; color: var(--text-muted); }
+    h1 { font-size: 22px; font-weight: 700; margin: 2px 0 0; }
 
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 22px 24px;
-  margin-bottom: 16px;
-}
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 22px 24px;
+      margin-bottom: 16px;
+    }
 
-.form-group { margin-bottom: 18px; }
-.form-label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+    .form-input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: 13px;
+      background: #fff;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.15s;
+      font-family: inherit;
+    }
+    .form-input:focus { border-color: var(--accent); }
+    .mono { font-family: 'JetBrains Mono', 'Fira Code', monospace !important; }
 
-.assignment-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-  padding: 6px 0;
-}
+    .badge-info {
+      display: inline-block;
+      padding: 4px 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
 
-.badge-link {
-  display: inline-block;
-  padding: 4px 12px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 12.5px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition: background 0.15s, color 0.15s;
-  &:hover { background: #f0f0f0; color: var(--text-primary); }
-}
+    .actions-row { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
 
-.toggle-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--text-primary);
-}
+    .btn {
+      padding: 8px 16px;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      font-family: inherit;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-accent {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+    .btn-accent:hover:not(:disabled) { background: var(--accent-light); }
+    .btn-ghost {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 8px 8px;
+    }
+    .btn-ghost:hover { color: var(--text-primary); }
 
-.toggle-label-text { font-size: 13px; }
+    /* Status card */
+    .status-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .status-title { font-size: 14px; font-weight: 600; }
+    .batch-id { font-size: 11.5px; color: var(--text-muted); }
 
-.alert-error {
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-size: 13px;
-  color: #dc2626;
-  margin-bottom: 14px;
-}
+    .progress-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
+    .progress-track {
+      height: 8px;
+      background: var(--bg);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
 
-.actions-row { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
-
-.btn {
-  padding: 8px 18px;
-  border-radius: 7px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  font-family: inherit;
-  text-decoration: none;
-}
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-accent {
-  background: transparent;
-  color: var(--accent);
-  border: 1px solid var(--accent);
-  &:hover:not(:disabled) { background: var(--accent-light); }
-}
-.btn-ghost {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  padding: 8px 8px;
-  &:hover { color: var(--text-primary); }
-}
-
-.mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
-
-/* Status card */
-.status-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-.status-title { font-size: 14px; font-weight: 600; }
-.batch-id { font-size: 11.5px; color: var(--text-muted); }
-
-.progress-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
-.progress-track {
-  height: 8px;
-  background: var(--bg);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.progress-fill {
-  height: 100%;
-  background: var(--accent);
-  border-radius: 4px;
-  transition: width 0.5s ease;
-}
-
-.done-banner {
-  margin-top: 14px;
-  font-size: 13px;
-  color: #16a34a;
-  font-weight: 500;
-}
-.done-link {
-  color: inherit;
-  text-decoration: underline;
-  font-weight: 600;
-}
-
-.footnote {
-  font-size: 11.5px;
-  color: var(--text-muted);
-  text-align: center;
-  margin-top: 8px;
-}
+    .footnote {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 8px;
+    }

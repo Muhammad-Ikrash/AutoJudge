@@ -7,20 +7,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public class SubmissionResultRepository {
-    public int countByAssignmentId(String assignmentId) {
-        String sql = "SELECT COUNT(*) FROM submission_results WHERE assignment_id = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, assignmentId);
-            try (java.sql.ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) return rs.getInt(1);
-            }
-        } catch (SQLException e) {
-            // ignore
-        }
-        return 0;
-    }
-
     public void save(SubmissionResult result) {
         String sql = """
             MERGE INTO submission_results (student_id, assignment_id, submission_id, score, verdict, passed_tests, total_tests, batch_id, graded_at)

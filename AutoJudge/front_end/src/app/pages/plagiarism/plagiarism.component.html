@@ -1,109 +1,88 @@
 <app-navbar />
 
-<div class="page">
-  <div class="page-header">
-    <div class="header-top">
-      <div>
-        <span class="breadcrumb">08 · /api/assignments/&#123;id&#125;/plagiarism-results</span>
-        <h1>Plagiarism — {{ assignmentId() }}</h1>
+    <div class="page">
+      <div class="page-header">
+        <div class="header-top">
+          <div>
+            <span class="breadcrumb">06 · GET /api/assignments/&#123;id&#125;/plagiarism</span>
+            <h1>Plagiarism — {{ assignmentTitle() }}</h1>
+          </div>
+          <button class="btn btn-secondary" (click)="downloadReport()">↓ Download .xlsx</button>
+        </div>
       </div>
-      <div class="header-actions">
-        <button class="btn btn-secondary" id="run-check-btn"
-                (click)="runCheck()" [disabled]="running() || loading()">
-          {{ running() ? 'Running…' : 'Run check' }}
-        </button>
-        <button class="btn btn-secondary" id="download-report-btn"
-                (click)="downloadReport()" [disabled]="!report()">
-          ↓ Download report
-        </button>
-      </div>
-    </div>
-  </div>
 
-  <!-- Threshold control -->
-  <div class="card controls-card">
-    <div class="controls-row">
-      <div class="control-group">
-        <label class="form-label">Similarity threshold (%)</label>
-        <input type="number" class="form-input" id="threshold-input"
-               [(ngModel)]="threshold" min="0" max="100" step="5"
-               (ngModelChange)="onThresholdChange()" />
+      <!-- Controls -->
+      <div class="card controls-card">
+        <div class="controls-row">
+          <div class="control-group">
+            <label class="form-label">Assignment ID</label>
+            <input type="text" class="form-input" [(ngModel)]="searchId" placeholder="dsa-a3" />
+          </div>
+          <div class="control-group">
+            <label class="form-label">Similarity threshold (%)</label>
+            <input type="number" class="form-input" [(ngModel)]="threshold" min="0" max="100" step="5" />
+          </div>
+          <button class="btn btn-accent" (click)="loadReport()">Analyze ↗</button>
+        </div>
       </div>
-      <button class="btn btn-accent" id="analyze-btn" (click)="loadResults()">Analyze ↗</button>
-    </div>
-  </div>
 
-  @if (error()) {
-    <div class="alert-error">{{ error() }}</div>
-  }
-  @if (runMessage()) {
-    <div class="alert-success">{{ runMessage() }}</div>
-  }
+      <!-- Summary -->
+      @if (report()) {
+        <div class="stat-grid">
+          <div class="card stat-card">
+            <div class="stat-label">Suspicious pairs</div>
+            <div class="stat-value red">{{ filteredPairs().length }}</div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-label">Language</div>
+            <div class="stat-value-sm fw-bold">{{ report()!.language }}</div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-label">Threshold</div>
+            <div class="stat-value-sm fw-bold">{{ threshold }}%</div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-label">Generated</div>
+            <div class="stat-value-sm fw-bold">{{ report()!.generatedAt ?? '—' }}</div>
+          </div>
+        </div>
 
-  @if (loading()) {
-    <div class="state-msg">Loading plagiarism data…</div>
-  } @else if (!report()) {
-    <div class="state-msg">
-      No plagiarism data yet for this assignment. Click <strong>Run check</strong> to start analysis.
+        <!-- Pairs table -->
+        <div class="card table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Student 1</th>
+                <th>Student 2</th>
+                <th>Similarity</th>
+                <th>Risk</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of filteredPairs(); track p.student1Id + p.student2Id) {
+                <tr>
+                  <td class="mono">{{ p.student1Id }}</td>
+                  <td class="mono">{{ p.student2Id }}</td>
+                  <td>
+                    <div class="sim-row">
+                      <div class="sim-bar-track">
+                        <div class="sim-bar-fill" [style.width.%]="p.similarity * 100" [class]="simClass(p.similarity)"></div>
+                      </div>
+                      <span class="sim-pct">{{ (p.similarity * 100).toFixed(1) }}%</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="risk-badge" [class]="riskClass(p.similarity)">
+                      {{ riskLabel(p.similarity) }}
+                    </span>
+                  </td>
+                </tr>
+              }
+              @empty {
+                <tr><td colspan="4" class="empty-row">No pairs above threshold</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
     </div>
-  } @else {
-    <!-- Summary stat cards -->
-    <div class="stat-grid">
-      <div class="card stat-card">
-        <div class="stat-label">Pairs compared</div>
-        <div class="stat-value">{{ totalPairs() }}</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-label">Flagged (&gt;{{ threshold }}%)</div>
-        <div class="stat-value red">{{ flaggedCount() }}</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-label">Engine</div>
-        <div class="stat-value-sm fw-bold">{{ engine() }}</div>
-      </div>
-    </div>
-
-    <!-- Pairs table -->
-    <div class="card table-card">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Submission A</th>
-            <th>Submission B</th>
-            <th>Similarity</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (p of filteredPairs(); track p.student1Id + p.student2Id) {
-            <tr>
-              <td class="mono">{{ p.student1Id }}</td>
-              <td class="mono">{{ p.student2Id }}</td>
-              <td>
-                <div class="sim-row">
-                  <div class="sim-bar-track">
-                    <div class="sim-bar-fill"
-                         [style.width.%]="p.similarity * 100"
-                         [class]="simClass(p.similarity)"></div>
-                  </div>
-                  <span class="sim-pct">{{ (p.similarity * 100).toFixed(0) }}%</span>
-                </div>
-              </td>
-              <td>
-                <span class="risk-badge" [class]="riskClass(p.similarity)">
-                  {{ riskLabel(p.similarity) }}
-                </span>
-              </td>
-            </tr>
-          }
-          @empty {
-            <tr><td colspan="4" class="empty-row">No pairs above {{ threshold }}% threshold</td></tr>
-          }
-        </tbody>
-      </table>
-      <div class="table-footer">
-        Pairwise data — deliberately not reusing the per-student results table layout
-      </div>
-    </div>
-  }
-</div>
