@@ -1,0 +1,85 @@
+<app-navbar />
+
+<div class="page">
+  <div class="page-header">
+    <span class="breadcrumb">07 · GET/PUT /api/assignments/&#123;id&#125;/config</span>
+    <h1>Config — {{ assignmentId() }}</h1>
+  </div>
+
+  @if (loading()) {
+    <div class="state-msg">Loading configuration…</div>
+  } @else if (error()) {
+    <div class="alert-error">{{ error() }}</div>
+  } @else {
+    <div class="config-grid">
+      <!-- Grading card -->
+      <div class="card config-card">
+        <div class="card-section-title">Grading</div>
+
+        <div class="field-group">
+          <label class="field-label" for="cfg-time-limit">Time limit (ms)</label>
+          <input id="cfg-time-limit" class="field-input"
+                 type="number" min="100" step="100"
+                 [value]="rl.timeLimitMs"
+                 (input)="setTimeLimitMs(+$any($event.target).value)" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="cfg-memory">Memory limit (MB)</label>
+          <input id="cfg-memory" class="field-input"
+                 type="number" min="32" step="32"
+                 [value]="rl.memoryLimitMb"
+                 (input)="setMemoryLimitMb(+$any($event.target).value)" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="cfg-cpu">CPU limit (cores)</label>
+          <input id="cfg-cpu" class="field-input"
+                 type="number" min="0.1" step="0.1"
+                 [value]="rl.cpuLimit"
+                 (input)="setCpuLimit(+$any($event.target).value)" />
+        </div>
+      </div>
+
+      <!-- Sandbox card -->
+      <div class="card config-card">
+        <div class="card-section-title">Sandbox</div>
+
+        <div class="field-group">
+          <label class="field-label" for="cfg-workdir">Working directory</label>
+          <input id="cfg-workdir" class="field-input"
+                 type="text"
+                 [value]="ep.workingDirectory"
+                 (input)="setWorkingDir($any($event.target).value)" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Auto-remove container</label>
+          <div class="toggle-row">
+            <label class="toggle-label">
+              <input type="checkbox" class="toggle-check" id="cfg-auto-remove"
+                     [checked]="ep.autoRemove"
+                     (change)="setAutoRemove($any($event.target).checked)" />
+              <span class="toggle-track"></span>
+            </label>
+            <span class="toggle-hint">{{ ep.autoRemove ? 'Enabled' : 'Disabled' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-outline" id="save-config-btn" (click)="save()" [disabled]="saving()">
+        {{ saving() ? 'Saving…' : 'Save changes ↗' }}
+      </button>
+      <button class="btn btn-ghost" id="reset-config-btn" (click)="reset()">Reset to defaults</button>
+      @if (saved()) {
+        <span class="save-confirm">✓ Saved successfully</span>
+      }
+    </div>
+
+    <div class="page-hint">
+      Form fields, not raw JSON editing — backed by a proper JSON parser (Jackson), not the original hand-rolled reader
+    </div>
+  }
+</div>

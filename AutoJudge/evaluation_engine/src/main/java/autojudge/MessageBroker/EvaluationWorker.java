@@ -31,6 +31,7 @@ public class EvaluationWorker {
 
     private volatile Channel activeChannel;
     private volatile String consumerTag;
+    private volatile boolean stopped = false;
 
     public EvaluationWorker(
             RabbitMQConnection rabbitMQConnection,
@@ -86,6 +87,7 @@ public class EvaluationWorker {
      * no new deliveries will arrive after this returns.
      */
     public void stop() {
+        stopped = true;
         try {
             if (activeChannel != null && activeChannel.isOpen()) {
                 log.info("Stopping EvaluationWorker — cancelling consumer '{}' and closing channel.", consumerTag);
@@ -100,7 +102,9 @@ public class EvaluationWorker {
     }
 
     public boolean isRunning() {
-        return activeChannel != null && activeChannel.isOpen();
+        if (stopped) return false;
+        if (activeChannel == null) return true;
+        return activeChannel.isOpen();
     }
 
     private void handleFailure(Channel channel, long deliveryTag, EvaluationJob job, Exception cause) {

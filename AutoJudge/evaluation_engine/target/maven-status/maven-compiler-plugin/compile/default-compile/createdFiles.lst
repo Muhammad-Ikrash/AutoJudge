@@ -26,6 +26,7 @@ autojudge/CoreEvaluation/model/EvaluationJob.class
 autojudge/CoreEvaluation/loader/SubmissionLoader.class
 autojudge/CoreEvaluation/model/testCaseResult.class
 autojudge/CoreEvaluation/docker/CompilationOrchestrator.class
+autojudge/api/AssignmentController$1.class
 autojudge/CoreEvaluation/model/Submission.class
 autojudge/CoreEvaluation/loader/CommandLineParser.class
 autojudge/CoreEvaluation/compiler/CompileCommandBuilder.class

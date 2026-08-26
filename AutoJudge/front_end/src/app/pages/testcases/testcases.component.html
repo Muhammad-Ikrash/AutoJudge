@@ -1,0 +1,97 @@
+<app-navbar />
+
+<div class="page">
+  <div class="page-header">
+    <span class="breadcrumb">06 · /api/assignments/&#123;id&#125;/testcases</span>
+    <div class="header-row">
+      <h1>Test Cases — {{ assignmentId() }}</h1>
+      <button class="btn btn-outline" id="add-tc-btn" (click)="openAdd()">+ Add test case ↗</button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="state-msg">Loading test cases…</div>
+  } @else if (error()) {
+    <div class="state-msg error">{{ error() }}</div>
+  } @else {
+    <div class="card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Input file</th>
+            <th>Expected output</th>
+            <th>Weight</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (tc of testCases(); track tc.id) {
+            <tr>
+              <td class="col-name">{{ tc.id }}</td>
+              <td class="mono text-secondary">{{ tc.inputFile }}</td>
+              <td class="mono text-secondary">{{ tc.outputFile || '—' }}</td>
+              <td>
+                @if (editingId() === tc.id) {
+                  <div class="weight-edit">
+                    <input type="number" class="weight-input" [(ngModel)]="editWeight" min="0" step="0.5" id="weight-input-{{ tc.id }}" />
+                    <button class="btn btn-xs btn-primary" (click)="saveWeight(tc)" [disabled]="saving()">Save</button>
+                    <button class="btn btn-xs" (click)="cancelEdit()">Cancel</button>
+                  </div>
+                } @else {
+                  <span class="weight-badge">{{ tc.weight }}</span>
+                }
+              </td>
+              <td>
+                <div class="row-actions">
+                  <button class="icon-btn" title="Edit weight" (click)="startEdit(tc)">✎</button>
+                  <button class="icon-btn icon-btn-danger" title="Delete" (click)="deleteTestCase(tc)">✕</button>
+                </div>
+              </td>
+            </tr>
+          }
+          @empty {
+            <tr><td colspan="5" class="empty-state">No test cases found for this assignment.</td></tr>
+          }
+        </tbody>
+      </table>
+      <div class="table-footer">
+        Weight configuration unified with config.json — resolved before this page was built, per the data-model decision
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Add Test Case Modal -->
+@if (showAddModal()) {
+  <div class="modal-backdrop" (click)="closeAdd()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Add Test Case</h2>
+        <button class="modal-close" (click)="closeAdd()">✕</button>
+      </div>
+      <div class="modal-body">
+        @if (addError()) {
+          <div class="alert-error">{{ addError() }}</div>
+        }
+        <label class="form-label">Name <span class="required">*</span></label>
+        <input class="form-input" type="text" id="new-tc-name" [(ngModel)]="newName" placeholder="e.g. testcase_05" />
+
+        <label class="form-label">Weight</label>
+        <input class="form-input" type="number" id="new-tc-weight" [(ngModel)]="newWeight" min="0" step="0.5" />
+
+        <label class="form-label">Input file <span class="required">*</span></label>
+        <input class="form-input file-input" type="file" id="new-tc-input" (change)="onInputFile($event)" />
+
+        <label class="form-label">Expected output <span class="required">*</span></label>
+        <input class="form-input file-input" type="file" id="new-tc-expected" (change)="onExpectedFile($event)" />
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="closeAdd()">Cancel</button>
+        <button class="btn btn-primary" id="submit-add-tc" (click)="submitAdd()" [disabled]="addLoading()">
+          {{ addLoading() ? 'Adding…' : 'Add' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

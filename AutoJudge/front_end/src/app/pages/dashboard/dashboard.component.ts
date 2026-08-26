@@ -44,9 +44,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private fetchStatus() {
     this.api.getWorkerStatus().subscribe({
-      next: (s) => {
+      next: (s: any) => {
         this.workerStatus.set(s);
         this.workerSlider = s.totalEvaluationWorkers;
+        this.queuedJobs.set(s.queuedJobs || 0);
+        this.lastBatch.set(s.lastBatchId || '—');
         this.updateWorkerList(s.totalEvaluationWorkers);
       },
       error: () => {/* keep mock data on error */ }

@@ -54,8 +54,8 @@ class PipelineOrchestratorTest {
         assertTrue(result.isPresent(), "Expected PlagiarismReport when plagiarism is enabled");
         assertTrue(called.get(), "Expected PlagiarismAnalysisService to be called when enabled");
         assertEquals("assignment-java", result.get().assignmentId());
-        assertEquals(1, result.get().similarities().size());
-        assertEquals("studentA", result.get().similarities().get(0).submissionA());
+        assertEquals(1, result.get().pairs().size());
+        assertEquals("studentA", result.get().pairs().get(0).submissionA());
     }
 
     @Test
@@ -114,7 +114,7 @@ class PipelineOrchestratorTest {
 
         assertTrue(result.isPresent());
         assertEquals("assignment-cpp", result.get().assignmentId());
-        assertFalse(result.get().similarities().isEmpty(), "Expected JPlag to find similarity between studentA and studentB");
+        assertFalse(result.get().pairs().isEmpty(), "Expected JPlag to find similarity between studentA and studentB");
     }
 
     @Test

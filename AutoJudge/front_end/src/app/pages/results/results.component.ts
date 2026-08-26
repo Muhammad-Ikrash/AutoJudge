@@ -5,8 +5,6 @@ import { ApiService } from '../../services/Assignment-apiservice';
 import { SubmissionResult } from '../../models/types';
 import { CommonModule } from '@angular/common';
 
-type Verdict = 'ACCEPTED' | 'TIME_LIMIT_EXCEEDED' | 'MALICIOUS_CODE' | 'MEMORY_LIMIT_EXCEEDED' | 'RUNTIME_ERROR' | 'GRADING' | string;
-
 @Component({
   selector: 'app-results',
   standalone: true,
@@ -18,10 +16,7 @@ export class ResultsComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private api = inject(ApiService);
 
-  assignmentId = signal('dsa-a3');
-  assignmentNum = signal('3');
-  course = signal('DSA');
-  section = signal('Section 3');
+  assignmentId = signal('');
   results = signal<SubmissionResult[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -35,7 +30,7 @@ export class ResultsComponent implements OnInit {
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id') ?? '';
     this.assignmentId.set(id);
-    this.loadResults(id);
+    if (id) this.loadResults(id);
   }
 
   private loadResults(id: string) {
@@ -58,9 +53,10 @@ export class ResultsComponent implements OnInit {
     const graded = data.filter(r => r.verdict !== 'GRADING').length;
     const accepted = data.filter(r => r.verdict === 'ACCEPTED').length;
     const flagged = data.filter(r => r.verdict === 'MALICIOUS_CODE').length;
-    const scored = data.filter(r => r.score !== undefined && r.maxScore);
+    // Score via passedTests/totalTests
+    const scored = data.filter(r => r.totalTests && r.totalTests > 0);
     const avg = scored.length
-      ? Math.round(scored.reduce((s, r) => s + (r.score! / r.maxScore!) * 100, 0) / scored.length)
+      ? Math.round(scored.reduce((s, r) => s + ((r.passedTests ?? 0) / r.totalTests!) * 100, 0) / scored.length)
       : 0;
     this.total.set(data.length);
     this.graded.set(graded);
@@ -69,14 +65,19 @@ export class ResultsComponent implements OnInit {
     this.avgScore.set(avg);
   }
 
+  scoreDisplay(r: SubmissionResult): string {
+    if (r.totalTests && r.totalTests > 0) return `${r.passedTests ?? 0}/${r.totalTests}`;
+    if (r.score != null) return String(r.score);
+    return '—';
+  }
+
   verdictClass(v: string): string {
-    const key = v?.replace(/ /g, '_').toUpperCase();
-    return `verdict-${key}`;
+    return `verdict-${(v ?? '').replace(/ /g, '_').toUpperCase()}`;
   }
 
   downloadReport() {
     this.api.downloadReport(this.assignmentId()).subscribe({
-      next: (blob: any) => {
+      next: (blob: Blob) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;

@@ -1,68 +1,89 @@
- <app-navbar />
+<app-navbar />
 
-    <div class="page">
-      <div class="page-header">
-        <span class="breadcrumb">05 · POST /api/assignments/&#123;id&#125;/rejudge · future</span>
-        <h1>Rejudge — Assignment {{ assignmentNum() }}</h1>
+<div class="page">
+  <div class="page-header">
+    <span class="breadcrumb">05 · POST /api/assignments/&#123;id&#125;/rejudge</span>
+    <h1>Rejudge — {{ assignmentId() }}</h1>
+  </div>
+
+  <div class="panels">
+    <!-- By Student -->
+    <div class="card">
+      <div class="panel-title">By student</div>
+
+      <div class="form-group">
+        <label class="form-label">Student ID</label>
+        <input
+          id="rejudge-student-id"
+          type="text"
+          class="form-input mono"
+          [(ngModel)]="studentId"
+          placeholder="21i-0533"
+        />
       </div>
 
-      <div class="panels">
-        <!-- By Student -->
-        <div class="card">
-          <div class="panel-title">By student</div>
+      @if (studentError()) {
+        <div class="alert-error">{{ studentError() }}</div>
+      }
+      @if (studentSuccess()) {
+        <div class="alert-success">✓ Rejudge queued for {{ studentId }}</div>
+      }
 
-          <div class="form-group">
-            <label class="form-label">Student ID</label>
-            <input
-              id="rejudge-student-id"
-              type="text"
-              class="form-input mono"
-              [(ngModel)]="studentId"
-              placeholder="21i-0533"
-            />
-          </div>
-          <p class="hint">
-            Re-runs all test cases for this student only. Overwrites prior result — graded_at is updated, no history kept.
-          </p>
-          <button
-            id="rejudge-student-btn"
-            class="btn btn-accent"
-            (click)="rejudgeStudent()"
-            [disabled]="!studentId || submitting()"
-          >
-            Rejudge student ↗
-          </button>
-        </div>
-
-        <!-- By Test Case -->
-        <div class="card">
-          <div class="panel-title">By test case</div>
-
-          <div class="form-group">
-            <label class="form-label">Test case</label>
-            <input
-              id="rejudge-testcase-id"
-              type="text"
-              class="form-input mono"
-              [(ngModel)]="testCase"
-              placeholder="testcase_07"
-            />
-          </div>
-          <p class="hint">
-            Re-runs this single test case across all 45 students. Useful after fixing a bad expected-output file.
-          </p>
-          <button
-            id="rejudge-testcase-btn"
-            class="btn btn-accent"
-            (click)="rejudgeTestCase()"
-            [disabled]="!testCase || submitting()"
-          >
-            Rejudge test case ↗
-          </button>
-        </div>
-      </div>
-
-      <p class="footnote">
-        Composite key (student_id, assignment_id, test_case_name) makes both operations directly addressable
+      <p class="hint">
+        Re-runs all test cases for this student only. Overwrites prior result — graded_at is updated, no history kept.
       </p>
+      <button
+        id="rejudge-student-btn"
+        class="btn btn-accent"
+        (click)="rejudgeStudent()"
+        [disabled]="!studentId || submitting()"
+      >
+        Rejudge student ↗
+      </button>
     </div>
+
+    <!-- By Test Case -->
+    <div class="card">
+      <div class="panel-title">By test case</div>
+
+      <div class="form-group">
+        <label class="form-label">Test case</label>
+        <input
+          id="rejudge-testcase-id"
+          type="text"
+          class="form-input mono"
+          [(ngModel)]="testCase"
+          placeholder="testcase_07"
+        />
+      </div>
+
+      @if (testCaseError()) {
+        <div class="alert-error">{{ testCaseError() }}</div>
+      }
+      @if (testCaseSuccess()) {
+        <div class="alert-success">✓ Rejudge queued for {{ testCase }}</div>
+      }
+
+      <p class="hint">
+        Re-runs this single test case across all students. Useful after fixing a bad expected-output file.
+      </p>
+      <button
+        id="rejudge-testcase-btn"
+        class="btn btn-accent"
+        (click)="rejudgeTestCase()"
+        [disabled]="!testCase || submitting()"
+      >
+        Rejudge test case ↗
+      </button>
+    </div>
+  </div>
+
+  <div class="nav-links-row">
+    <a [routerLink]="['/assignments', assignmentId(), 'results']" class="nav-link-text">← Back to results</a>
+    <a [routerLink]="['/assignments', assignmentId(), 'testcases']" class="nav-link-text">Manage test cases ↗</a>
+  </div>
+
+  <p class="footnote">
+    Composite key (student_id, assignment_id) makes both operations directly addressable
+  </p>
+</div>

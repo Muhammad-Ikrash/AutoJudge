@@ -7,7 +7,6 @@
     .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
     .breadcrumb { font-size: 11px; color: var(--text-muted); }
     h1 { font-size: 22px; font-weight: 700; margin: 2px 0 2px; }
-    .sub-info { font-size: 12px; color: var(--text-secondary); }
     .header-actions { display: flex; gap: 8px; margin-top: 4px; }
 
     .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
@@ -30,8 +29,25 @@
     .data-table tbody tr:last-child { border-bottom: none; }
     .data-table td { padding: 12px 16px; font-size: 13px; }
 
+    .col-name { font-weight: 500; }
     .text-secondary { color: var(--text-secondary); }
     .mono { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; }
+
+    .mini-progress {
+      height: 5px;
+      background: var(--bg);
+      border-radius: 3px;
+      overflow: hidden;
+      width: 80px;
+      margin-bottom: 3px;
+    }
+    .mini-fill {
+      height: 100%;
+      background: var(--green);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    .mini-label { font-size: 11px; color: var(--text-secondary); }
 
     .verdict-badge {
       display: inline-block;
@@ -47,6 +63,7 @@
     .verdict-MEMORY_LIMIT_EXCEEDED { background: var(--purple-light); color: var(--purple); }
     .verdict-RUNTIME_ERROR { background: var(--pink-light); color: var(--pink); }
     .verdict-GRADING { background: #f3f4f6; color: #6b7280; }
+    .verdict-WRONG_ANSWER { background: #fff7ed; color: #d97706; }
 
     .btn {
       padding: 7px 14px;
@@ -59,7 +76,26 @@
       color: var(--text-primary);
       transition: background 0.15s;
       font-family: inherit;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
     }
     .btn:hover { background: var(--bg); }
+    .btn-secondary { }
+
+    .state-msg {
+      padding: 60px 24px;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 14px;
+      &.error { color: #dc2626; }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
 
     @media (max-width: 700px) { .stat-grid { grid-template-columns: repeat(2,1fr); } }

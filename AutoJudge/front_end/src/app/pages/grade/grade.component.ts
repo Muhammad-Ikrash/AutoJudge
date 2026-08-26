@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NavbarComponent } from '../../components/navbar/navbar.component';
 import { ApiService } from '../../services/Assignment-apiservice';
 import { GradeResponse } from '../../models/types';
@@ -10,7 +10,7 @@ import { interval, Subscription } from 'rxjs';
 @Component({
   selector: 'app-grade',
   standalone: true,
-  imports: [NavbarComponent, CommonModule, FormsModule],
+  imports: [NavbarComponent, CommonModule, FormsModule, RouterLink],
   templateUrl: './grade.component.html',
   styleUrl: './grade.component.scss'
 })
@@ -20,7 +20,7 @@ export class GradeComponent implements OnInit, OnDestroy {
 
   assignmentId = signal('');
   assignmentTitle = signal('Assignment');
-  assignmentPath = '';
+  enablePlagiarism = false;
   grading = signal(false);
   showStatus = signal(false);
   batchId = signal('');
@@ -28,60 +28,59 @@ export class GradeComponent implements OnInit, OnDestroy {
   totalJobs = signal(0);
   progressPct = signal(0);
   gradeError = signal<string | null>(null);
+  done = signal(false);
 
   private pollSub?: Subscription;
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id') ?? '';
     this.assignmentId.set(id);
-
-    const titles: Record<string, string> = {
-      'dsa-a3': 'Assignment 3: Linked Lists',
-      'dsa-a4': 'Assignment 4: Graphs',
-      'oop-a2': 'Assignment 2: Recursion',
-      'pf-a1': 'Assignment 1: Pointers',
-    };
-    this.assignmentTitle.set(titles[id] ?? id);
-    this.assignmentPath = `/data/assignments/dsa/${id}`;
+    this.assignmentTitle.set(id);
   }
 
   ngOnDestroy() { this.pollSub?.unsubscribe(); }
 
   startGrading() {
-    if (!this.assignmentPath) return;
     this.grading.set(true);
     this.showStatus.set(true);
+    this.done.set(false);
     this.completedJobs.set(0);
+    this.progressPct.set(0);
+    this.gradeError.set(null);
 
-    this.api.gradeAssignment(this.assignmentId(), this.assignmentPath).subscribe({
+    this.api.gradeAssignment(this.assignmentId(), undefined, this.enablePlagiarism).subscribe({
       next: (r: GradeResponse) => {
         this.totalJobs.set(r.jobsProduced || 0);
         this.batchId.set(r.assignmentId || this.assignmentId());
-        this.gradeError.set(null);
         this.startPolling();
       },
       error: () => {
         this.grading.set(false);
-        this.showStatus.set(false);
-        this.gradeError.set('Failed to submit grading job. Check that the backend is running and the path is correct.');
+        this.gradeError.set('Failed to submit grading job. Check that the backend is running.');
       }
     });
   }
 
   private startPolling() {
-    let completed = 0;
-    const total = this.totalJobs();
     this.pollSub?.unsubscribe();
-    this.pollSub = interval(800).subscribe(() => {
-      completed = Math.min(completed + Math.ceil(Math.random() * 3), total);
-      this.completedJobs.set(completed);
-      this.progressPct.set(Math.round((completed / total) * 100));
-      if (completed >= total) {
-        this.grading.set(false);
-        this.pollSub?.unsubscribe();
-      }
+    this.pollSub = interval(1500).subscribe(() => {
+      this.api.getAssignmentStatus(this.assignmentId()).subscribe({
+        next: (s) => {
+          const completed = s.completed ?? 0;
+          const total = s.total > 0 ? s.total : this.totalJobs();
+          this.completedJobs.set(completed);
+          if (total > 0) {
+            this.totalJobs.set(total);
+            this.progressPct.set(Math.min(100, Math.round((completed / total) * 100)));
+          }
+          if (total > 0 && completed >= total) {
+            this.grading.set(false);
+            this.done.set(true);
+            this.pollSub?.unsubscribe();
+          }
+        },
+        error: () => { /* keep polling on transient error */ }
+      });
     });
   }
-
-  viewConfig() { alert('Config view coming soon'); }
 }

@@ -45,7 +45,9 @@ public class WorkerController {
     public ResponseEntity<Map<String, Object>> workerStatus() {
         return ResponseEntity.ok(Map.of(
                 "totalEvaluationWorkers", workerManager.evaluationWorkerCount(),
-                "resultWorkerRunning", workerManager.isResultWorkerRunning()
+                "resultWorkerRunning", workerManager.isResultWorkerRunning(),
+                "queuedJobs", workerManager.getQueuedJobs(),
+                "lastBatchId", workerManager.getResultWorker() != null ? workerManager.getResultWorker().getLatestBatchId() : "—"
         ));
     }
 
@@ -64,6 +66,19 @@ public class WorkerController {
     @PostMapping("/api/system/start")
     public ResponseEntity<Map<String, Object>> startSystem(
             @RequestParam(value = "workers", defaultValue = "1") int workerCount) {
-        return ResponseEntity.ok(workerManager.startSystem(workerCount));
+        try {
+            return ResponseEntity.ok(workerManager.startSystem(workerCount));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage() != null ? e.getMessage() : e.getClass().getName()));
+        }
+    }
+
+    /** Return the status of a specific batch. */
+    @GetMapping("/api/batches/{batchId}/status")
+    public ResponseEntity<Map<String, Object>> getBatchStatus(@PathVariable("batchId") String batchId) {
+        if (workerManager.getResultWorker() != null) {
+            return ResponseEntity.ok(workerManager.getResultWorker().getBatchStatus(batchId));
+        }
+        return ResponseEntity.ok(Map.of("completed", 0, "total", 0));
     }
 }

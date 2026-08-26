@@ -23,7 +23,7 @@ public class PlagiarismReportRepository {
             }
             
             try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
-                for (SimilarityPair pair : report.similarities()) {
+                for (SimilarityPair pair : report.pairs()) {
                     insertStmt.setString(1, report.assignmentId());
                     insertStmt.setString(2, pair.submissionA());
                     insertStmt.setString(3, pair.submissionB());
