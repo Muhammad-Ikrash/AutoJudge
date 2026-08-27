@@ -1,14 +1,15 @@
-*.json
-CourseFiles
+client*.json
+credentials.json
+token.json
 
+CourseFiles
+assignments-folder
 git 
 *target*
 AutoJudge/evaluation_engine/target
-assignments*
 tickets.md
 *review.md
 *venv*
-*assignments*
 
 RABBITMQ_IMPLEMENTATION_NEW_FUNCTIONALITY.md
 rabbitMQ.txt

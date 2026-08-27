@@ -1,0 +1,64 @@
+<app-navbar />
+
+<div class="page" (click)="closeMenu()">
+  <div class="page-header">
+    <span class="breadcrumb">01 · GET /api/assignments</span>
+    <h1>Assignments</h1>
+  </div>
+
+  @if (loading()) {
+    <div class="state-msg">Loading assignments…</div>
+  } @else if (error()) {
+    <div class="state-msg error">{{ error() }}</div>
+  } @else {
+    <div class="card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Assignment</th>
+            <th>Submissions</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of assignments(); track a.id) {
+            <tr>
+              <td class="col-name">
+                <a [routerLink]="['/assignments', a.id, 'grade']" class="row-link">{{ a.id }}</a>
+              </td>
+              <td class="text-secondary">{{ submissionCount(a) }}</td>
+              <td>
+                <span class="status-badge" [class]="'status-' + a.status">
+                  {{ statusLabel(a.status) }}
+                </span>
+              </td>
+              <td class="actions-cell">
+                <div class="menu-wrap" (click)="$event.stopPropagation()">
+                  <button class="dots-btn" [id]="'menu-btn-' + a.id" (click)="toggleMenu(a.id)">⋯</button>
+                  @if (menuOpenId() === a.id) {
+                    <div class="dropdown">
+                      <a class="dropdown-item" [routerLink]="['/assignments', a.id, 'grade']">Grade</a>
+                      <a class="dropdown-item" [routerLink]="['/assignments', a.id, 'results']">Results</a>
+                      <a class="dropdown-item" [routerLink]="['/assignments', a.id, 'rejudge']">Rejudge</a>
+                      <div class="dropdown-divider"></div>
+                      <a class="dropdown-item" [routerLink]="['/assignments', a.id, 'testcases']">Test Cases</a>
+                      <a class="dropdown-item" [routerLink]="['/assignments', a.id, 'config']">Config Editor</a>
+                      <a class="dropdown-item" [routerLink]="['/assignments', a.id, 'plagiarism']">Plagiarism</a>
+                    </div>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+          @empty {
+            <tr><td colspan="4" class="empty-state">No assignments found in the assignments/ directory.</td></tr>
+          }
+        </tbody>
+      </table>
+      <div class="table-footer">
+        Source: scanned assignment directories — each row links to Grade / Results / Rejudge / Test Cases / Config / Plagiarism
+      </div>
+    </div>
+  }
+</div>
