@@ -5,7 +5,7 @@ token.json
 CourseFiles
 assignments-folder
 git 
-*target*
+# *target*
 AutoJudge/evaluation_engine/target
 tickets.md
 *review.md
