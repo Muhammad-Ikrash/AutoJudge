@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,8 +29,6 @@ public class ResultWorker {
     private final ObjectMapper objectMapper;
     private final Map<String, List<SubmissionResult>> batchResultsMap = new ConcurrentHashMap<>();
     private final autojudge.database.SubmissionResultRepository resultRepository = new autojudge.database.SubmissionResultRepository();
-
-    private volatile com.rabbitmq.client.Channel activeChannel;
 
     public ResultWorker(RabbitMQConnection rabbitMQConnection) {
         this.rabbitMQConnection = Objects.requireNonNull(rabbitMQConnection, "rabbitMQConnection must not be null");
@@ -78,33 +77,13 @@ public class ResultWorker {
                 }
             };
 
-            channel.basicConsume(RabbitMQConnection.RESULT_QUEUE, false, deliverCallback, tag -> {
-                log.info("ResultWorker consumer cancelled: {}", tag);
+            channel.basicConsume(RabbitMQConnection.RESULT_QUEUE, false, deliverCallback, consumerTag -> {
+                log.info("ResultWorker consumer cancelled: {}", consumerTag);
             });
-            this.activeChannel = channel;
 
         } catch (Exception e) {
             log.error("Failed to start ResultWorker listener", e);
             throw new IOException("Failed to start ResultWorker", e);
         }
-    }
-
-    /**
-     * Gracefully stops the ResultWorker. In-flight message processing completes naturally;
-     * no new deliveries will arrive after this returns.
-     */
-    public void stop() {
-        try {
-            if (activeChannel != null && activeChannel.isOpen()) {
-                log.info("Stopping ResultWorker — closing channel.");
-                activeChannel.close();
-            }
-        } catch (Exception e) {
-            log.warn("Error while stopping ResultWorker channel", e);
-        }
-    }
-
-    public boolean isRunning() {
-        return activeChannel != null && activeChannel.isOpen();
     }
 }
