@@ -1,0 +1,6 @@
+2026-08-27 20:57:28.955890+05:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "TESTCASE_RESULTS" not found (this database is empty); SQL statement:
+SELECT * FROM testcase_results WHERE assignment_id = ? [42104-240]
+2026-08-27 20:57:31.856638+05:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PLAGIARISM_REPORTS" not found (this database is empty); SQL statement:
+SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC [42104-240]

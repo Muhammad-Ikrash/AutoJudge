@@ -49,3 +49,12 @@ export interface PlagiarismReport {
   pairs: PlagiarismPair[];
   generatedAt?: string;
 }
+
+export interface AssignmentSummary {
+  id?: string;
+  name: string;
+  description?: string;
+  submissionCount?: number;
+  config?: any;
+  status?: any;
+}

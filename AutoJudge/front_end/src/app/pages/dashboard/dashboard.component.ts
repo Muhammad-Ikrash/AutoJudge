@@ -29,12 +29,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   loading = signal(false);
   workerSlider = 4;
 
-  activeWorkers = signal<ActiveWorker[]>([
-    { name: 'worker-01', task: 'grading DSA-A3, student 21i-0214', active: true },
-    { name: 'worker-02', task: 'idle', active: false },
-    { name: 'worker-03', task: 'grading DSA-A3, student 21i-0219', active: true },
-    { name: 'worker-04', task: 'idle', active: false },
-  ]);
+  // activeWorkers = signal<ActiveWorker[]>([
+  //   { name: 'worker-01', task: 'grading DSA-A3, student 21i-0214', active: true },
+  //   { name: 'worker-02', task: 'idle', active: false },
+  //   { name: 'worker-03', task: 'grading DSA-A3, student 21i-0219', active: true },
+  //   { name: 'worker-04', task: 'idle', active: false },
+  // ]);
 
   private pollSub?: Subscription;
 
@@ -52,21 +52,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
       next: (s) => {
         this.workerStatus.set(s);
         this.workerSlider = s.totalEvaluationWorkers;
-        this.updateWorkerList(s.totalEvaluationWorkers);
+        // this.updateWorkerList(s.totalEvaluationWorkers);
       },
       error: () => {/* keep mock data on error */ }
     });
   }
 
-  private updateWorkerList(count: number) {
-    const workers: ActiveWorker[] = [];
-    for (let i = 1; i <= count; i++) {
-      const name = `worker-${String(i).padStart(2, '0')}`;
-      const existing = this.activeWorkers().find(w => w.name === name);
-      workers.push(existing ?? { name, task: 'idle', active: false });
-    }
-    this.activeWorkers.set(workers);
-  }
+  // private updateWorkerList(count: number) {
+  //   const workers: ActiveWorker[] = [];
+  //   for (let i = 1; i <= count; i++) {
+  //     const name = `worker-${String(i).padStart(2, '0')}`;
+  //     const existing = this.activeWorkers().find(w => w.name === name);
+  //     workers.push(existing ?? { name, task: 'idle', active: false });
+  //   }
+  //   this.activeWorkers.set(workers);
+  // }
 
   incrementWorkers() { this.workerSlider = Math.min(20, this.workerSlider + 1); }
   decrementWorkers() { this.workerSlider = Math.max(0, this.workerSlider - 1); }

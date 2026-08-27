@@ -27,10 +27,10 @@ export class AssignmentsComponent implements OnInit {
   load() {
     this.loading.set(true);
     this.error.set(null);
-    this.api.listAssignments().subscribe({
-      next: (list) => { this.assignments.set(list); this.loading.set(false); },
-      error: () => { this.error.set('Failed to load assignments from backend.'); this.loading.set(false); }
-    });
+    // this.api.listAssignments().subscribe({
+    //   next: (list) => { this.assignments.set(list); this.loading.set(false); },
+    //   error: () => { this.error.set('Failed to load assignments from backend.'); this.loading.set(false); }
+    // });
   }
 
   toggleMenu(id: string) {
