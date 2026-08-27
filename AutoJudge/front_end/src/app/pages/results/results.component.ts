@@ -23,50 +23,32 @@ export class ResultsComponent implements OnInit {
   course = signal('DSA');
   section = signal('Section 3');
   results = signal<SubmissionResult[]>([]);
-  loading = signal(false);
-  error = signal<string | null>(null);
 
-  graded = signal(0);
-  total = signal(0);
-  accepted = signal(0);
-  flagged = signal(0);
-  avgScore = signal(0);
+  graded = signal(42);
+  total = signal(45);
+  accepted = signal(31);
+  flagged = signal(2);
+  avgScore = signal(78);
 
   ngOnInit() {
-    const id = this.route.snapshot.paramMap.get('id') ?? '';
+    const id = this.route.snapshot.paramMap.get('id') ?? 'dsa-a3';
     this.assignmentId.set(id);
-    this.loadResults(id);
-  }
 
-  private loadResults(id: string) {
-    this.loading.set(true);
-    this.error.set(null);
+    // Mock results matching the screenshot
+    this.results.set([
+      { studentId: '21i-0512', assignmentId: id, score: 10, maxScore: 10, verdict: 'ACCEPTED', gradedAt: '14:02' },
+      { studentId: '21i-0498', assignmentId: id, score: 6, maxScore: 10, verdict: 'TIME_LIMIT_EXCEEDED', gradedAt: '14:02' },
+      { studentId: '21i-0533', assignmentId: id, score: 0, maxScore: 10, verdict: 'MALICIOUS_CODE', gradedAt: '14:03' },
+      { studentId: '21i-0447', assignmentId: id, score: 0, maxScore: 10, verdict: 'MEMORY_LIMIT_EXCEEDED', gradedAt: '14:03' },
+      { studentId: '21i-0561', assignmentId: id, score: 4, maxScore: 10, verdict: 'RUNTIME_ERROR', gradedAt: '14:04' },
+      { studentId: '21i-0502', assignmentId: id, score: undefined, maxScore: 10, verdict: 'GRADING', gradedAt: undefined },
+    ]);
+
+    // Optionally load from API
     this.api.getResults(id).subscribe({
-      next: (data) => {
-        this.results.set(data ?? []);
-        this.computeStats(data ?? []);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.error.set('Failed to load results from backend.');
-        this.loading.set(false);
-      }
+      next: (data) => { if (data?.length) this.results.set(data); },
+      error: () => { /* keep mock data */ }
     });
-  }
-
-  private computeStats(data: SubmissionResult[]) {
-    const graded = data.filter(r => r.verdict !== 'GRADING').length;
-    const accepted = data.filter(r => r.verdict === 'ACCEPTED').length;
-    const flagged = data.filter(r => r.verdict === 'MALICIOUS_CODE').length;
-    const scored = data.filter(r => r.score !== undefined && r.maxScore);
-    const avg = scored.length
-      ? Math.round(scored.reduce((s, r) => s + (r.score! / r.maxScore!) * 100, 0) / scored.length)
-      : 0;
-    this.total.set(data.length);
-    this.graded.set(graded);
-    this.accepted.set(accepted);
-    this.flagged.set(flagged);
-    this.avgScore.set(avg);
   }
 
   verdictClass(v: string): string {

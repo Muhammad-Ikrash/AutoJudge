@@ -29,7 +29,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   loading = signal(false);
   workerSlider = 4;
 
-  activeWorkers = signal<ActiveWorker[]>([]);
+  activeWorkers = signal<ActiveWorker[]>([
+    { name: 'worker-01', task: 'grading DSA-A3, student 21i-0214', active: true },
+    { name: 'worker-02', task: 'idle', active: false },
+    { name: 'worker-03', task: 'grading DSA-A3, student 21i-0219', active: true },
+    { name: 'worker-04', task: 'idle', active: false },
+  ]);
 
   private pollSub?: Subscription;
 

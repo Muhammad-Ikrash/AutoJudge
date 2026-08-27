@@ -6,14 +6,6 @@ Instead of manually downloading submissions and checking outputs, AutoJudge aims
 
 ---
 
-## Pre-Reqs
-
-- Run RabbitMQ server on your local machine
-        - sudo docker run -d --name rabbitmq-autojudge -p 5672:5672 -p 15672:15672 rabbitmq:4.3.2-management-alpine
-- create an image from the Docker File in @evaluation_engine with name auto-judge-container:v1.0
-        - sudo docker build -t auto-judge-container:v1.0 .
-
-
 ## Project Goals
 
 - Collect submissions from Google Classroom
@@ -26,7 +18,7 @@ Instead of manually downloading submissions and checking outputs, AutoJudge aims
 
 ---
 
-Current Progress : Backend Has been completed, only frontend and K8s remains 
+Current Progress : Plagiarism Added
 
 ---
 
@@ -69,7 +61,7 @@ Angular Dashboard
 
 ---
 
-## Folder Structure
+## Folder Structure (Planned)
 
 ```
 AutoJudge/
@@ -86,7 +78,11 @@ AutoJudge/
 
 ## Future Features
 
+- Partial marking
 - Multiple programming language support
+- Parallel grading
+- Plagiarism detection
+- Export grades to CSV/Excel
 - Instructor dashboard
 - Kubernetes-based execution workers
 - Performance and resource monitoring

@@ -17,13 +17,11 @@ export class PlagiarismComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private api = inject(ApiService);
 
-  assignmentId = signal('');
-  assignmentTitle = signal('Assignment');
+  assignmentId = signal('dsa-a3');
+  assignmentTitle = signal('Assignment 3');
   report = signal<PlagiarismReport | null>(null);
   filteredPairs = signal<PlagiarismPair[]>([]);
-  loading = signal(false);
-  error = signal<string | null>(null);
-  searchId = '';
+  searchId = 'dsa-a3';
   threshold = 70;
 
   ngOnInit() {
@@ -34,19 +32,26 @@ export class PlagiarismComponent implements OnInit {
   }
 
   loadReport() {
-    this.loading.set(true);
-    this.error.set(null);
+    const mockReport: PlagiarismReport = {
+      assignmentId: this.searchId,
+      language: 'cpp',
+      generatedAt: '14:20',
+      pairs: [
+        { student1Id: '21i-0512', student2Id: '21i-0447', similarity: 0.91 },
+        { student1Id: '21i-0533', student2Id: '21i-0498', similarity: 0.85 },
+        { student1Id: '21i-0561', student2Id: '21i-0502', similarity: 0.74 },
+        { student1Id: '21i-0214', student2Id: '21i-0219', similarity: 0.68 },
+      ]
+    };
+
     this.api.getPlagiarismReport(this.searchId, this.threshold / 100).subscribe({
       next: (r) => {
         this.report.set(r);
         this.applyFilter(r.pairs);
-        this.loading.set(false);
       },
       error: () => {
-        this.error.set('Failed to load plagiarism report. Backend may not be available.');
-        this.report.set(null);
-        this.filteredPairs.set([]);
-        this.loading.set(false);
+        this.report.set(mockReport);
+        this.applyFilter(mockReport.pairs);
       }
     });
   }

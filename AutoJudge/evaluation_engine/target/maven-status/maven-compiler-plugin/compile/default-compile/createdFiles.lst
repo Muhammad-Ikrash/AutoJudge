@@ -60,7 +60,6 @@ autojudge/CoreEvaluation/grading/GradingService.class
 autojudge/CoreEvaluation/model/EvaluationContext.class
 autojudge/PlagiarismDetection/model/PlagiarismAnalysisRequest.class
 autojudge/PlagiarismDetection/model/PlagiarismConfig.class
-autojudge/api/config/AppConfig$1.class
 autojudge/MessageBroker/ResultWorker.class
 autojudge/CoreEvaluation/model/SubmissionLayout.class
 autojudge/CoreEvaluation/util/FileUtils.class

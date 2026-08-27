@@ -15,7 +15,7 @@ SETUP
 
 3. In Google Cloud Console, make sure these APIs are enabled on your project:
        - Google Classroom API
-       - oogle Drive API
+       - Google Drive API
 
 4. Run: python classroom_downloader.py
    A browser window will open for the first-time login/consent. After that,
