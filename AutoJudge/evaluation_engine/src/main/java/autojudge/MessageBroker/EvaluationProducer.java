@@ -34,6 +34,8 @@ public class EvaluationProducer {
         this.objectMapper = new ObjectMapper();
     }
 
+    public record ProduceResult(String batchId, int jobsProduced) {}
+
     /**
      * Discovers submissions under assignmentPath/submissions/ and publishes EvaluationJobs to RabbitMQ.
      * Optionally runs plagiarism detection if enablePlagiarism is true.
@@ -43,7 +45,7 @@ public class EvaluationProducer {
      * @return Number of evaluation jobs published.
      * @throws IOException If discovering or publishing fails.
      */
-    public int produceEvaluationJobs(Path assignmentPath, boolean enablePlagiarism) throws IOException {
+    public ProduceResult produceEvaluationJobs(Path assignmentPath, boolean enablePlagiarism) throws IOException {
         String assignmentId = assignmentPath.getFileName() != null
                 ? assignmentPath.getFileName().toString()
                 : "assignment-1";
@@ -105,11 +107,53 @@ public class EvaluationProducer {
             throw new IOException("Failed to produce evaluation jobs", e);
         }
 
-        return totalSubmissions;
+        return new ProduceResult(batchId, totalSubmissions);
     }
 
-    public int produceEvaluationJobs(Path assignmentPath) throws IOException {
+    public ProduceResult produceEvaluationJobs(Path assignmentPath) throws IOException {
         return produceEvaluationJobs(assignmentPath, false);
+    }
+
+    public ProduceResult produceSingleStudentJob(Path assignmentPath, String studentId) throws IOException {
+        String assignmentId = assignmentPath.getFileName() != null
+                ? assignmentPath.getFileName().toString()
+                : "assignment-1";
+
+        Path studentSubPath = assignmentPath.resolve("submissions").resolve(studentId);
+        if (!Files.exists(studentSubPath) || !Files.isDirectory(studentSubPath)) {
+            throw new IOException("Submission directory for student " + studentId + " not found or is not a directory at " + studentSubPath);
+        }
+
+        String batchId = "batch-" + java.util.UUID.randomUUID().toString();
+        
+        try (Channel channel = rabbitMQConnection.createChannel()) {
+            String submissionId = assignmentId + "-" + studentId + "-" + java.util.UUID.randomUUID().toString().substring(0, 8);
+
+            EvaluationJob job = new EvaluationJob(
+                    submissionId,
+                    assignmentId,
+                    studentId,
+                    assignmentPath.toAbsolutePath().toString(),
+                    studentSubPath.toAbsolutePath().toString(),
+                    batchId,
+                    1
+            );
+
+            byte[] messageBytes = objectMapper.writeValueAsBytes(job);
+            channel.basicPublish(
+                    RabbitMQConnection.EVALUATION_EXCHANGE,
+                    RabbitMQConnection.EVALUATION_ROUTING_KEY,
+                    com.rabbitmq.client.MessageProperties.PERSISTENT_TEXT_PLAIN,
+                    messageBytes
+            );
+            log.info("Published single EvaluationJob: studentId={}, submissionId={}, batchId={}",
+                    studentId, submissionId, batchId);
+        } catch (Exception e) {
+            log.error("Failed to produce single student job for {}", studentSubPath, e);
+            throw new IOException("Failed to produce single student job", e);
+        }
+
+        return new ProduceResult(batchId, 1);
     }
 
     private String detectLanguageFromSubmissions(List<Path> submissionPaths) {

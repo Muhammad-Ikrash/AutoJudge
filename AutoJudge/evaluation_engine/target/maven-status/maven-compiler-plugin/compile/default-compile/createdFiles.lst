@@ -1,4 +1,5 @@
 autojudge/database/DatabaseConnection.class
+autojudge/MessageBroker/ResultWorker$BatchProgress.class
 autojudge/CoreEvaluation/docker/DefaultContainerManager$1.class
 autojudge/CoreEvaluation/exception/CompilationException.class
 autojudge/CoreEvaluation/docker/DefaultContainerManager.class
@@ -24,9 +25,11 @@ autojudge/CoreEvaluation/grading/EvaluationEngine.class
 autojudge/CoreEvaluation/exception/ConfigurationException.class
 autojudge/CoreEvaluation/model/EvaluationJob.class
 autojudge/CoreEvaluation/loader/SubmissionLoader.class
+autojudge/database/SubmissionResultRepository$AssignmentSummary.class
 autojudge/CoreEvaluation/model/testCaseResult.class
 autojudge/CoreEvaluation/docker/CompilationOrchestrator.class
 autojudge/CoreEvaluation/model/Submission.class
+autojudge/api/CorsConfig.class
 autojudge/CoreEvaluation/loader/CommandLineParser.class
 autojudge/CoreEvaluation/compiler/CompileCommandBuilder.class
 autojudge/api/config/AppConfig.class
@@ -67,6 +70,7 @@ autojudge/PlagiarismDetection/model/PlagiarismReport.class
 autojudge/CoreEvaluation/loader/TestCaseFileProcessor.class
 autojudge/CoreEvaluation/model/ExecCMD.class
 autojudge/api/WorkerController.class
+autojudge/MessageBroker/EvaluationProducer$ProduceResult.class
 autojudge/CoreEvaluation/docker/DockerRunner.class
 autojudge/CoreEvaluation/grading/GradingOrchestrator.class
 autojudge/CoreEvaluation/util/JsonUtils.class

@@ -1,0 +1,71 @@
+<div class="dashboard-container">
+  <div class="header glass-panel">
+    <div>
+      <a routerLink="/" class="back-link">&larr; Back to Dashboard</a>
+      <h1>Plagiarism: {{ assignmentId }}</h1>
+      <p>Similarity pairs above the selected threshold.</p>
+    </div>
+    <button class="btn btn-primary" (click)="downloadReport()" [disabled]="downloading || pairs.length === 0">
+      {{ downloading ? 'Downloading...' : 'Download Report' }}
+    </button>
+  </div>
+
+  <div class="glass-panel threshold-panel">
+    <label>Similarity Threshold: <strong>{{ thresholdPercent }}%</strong></label>
+    <input
+      type="range"
+      min="0"
+      max="100"
+      step="5"
+      [(ngModel)]="thresholdPercent"
+      (ngModelChange)="onThresholdChange()"
+      class="threshold-slider"
+    />
+    <div class="slider-labels">
+      <span>0%</span>
+      <span>50%</span>
+      <span>100%</span>
+    </div>
+  </div>
+
+  @if (error) {
+    <div class="error-banner">{{ error }}</div>
+  }
+
+  <div class="glass-panel table-container">
+    @if (loading) {
+      <div class="empty-state">Loading...</div>
+    } @else if (pairs.length === 0 && !error) {
+      <div class="empty-state">No pairs above this threshold.</div>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>Student A</th>
+            <th>Student B</th>
+            <th>Similarity</th>
+            <th>Indicator</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (pair of pairs; track pair.submissionA + pair.submissionB) {
+            <tr>
+              <td class="font-bold">{{ pair.submissionA }}</td>
+              <td class="font-bold">{{ pair.submissionB }}</td>
+              <td>
+                <span class="badge" [ngClass]="getSimilarityClass(pair.similarity)">
+                  {{ (pair.similarity * 100).toFixed(1) }}%
+                </span>
+              </td>
+              <td>
+                <div class="similarity-bar-bg">
+                  <div class="similarity-bar-fill" [style.width.%]="pair.similarity * 100" [ngClass]="getSimilarityClass(pair.similarity)"></div>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>

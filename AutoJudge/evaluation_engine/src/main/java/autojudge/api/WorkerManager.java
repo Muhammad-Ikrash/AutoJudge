@@ -136,6 +136,13 @@ public class WorkerManager {
         }
     }
 
+    public autojudge.MessageBroker.ResultWorker.BatchProgress getBatchProgress(String batchId) {
+        if (resultWorker == null) {
+            return new autojudge.MessageBroker.ResultWorker.BatchProgress(batchId, 0, 0, false, java.util.Collections.emptyMap());
+        }
+        return resultWorker.getBatchProgress(batchId);
+    }
+
     public boolean isResultWorkerRunning() {
         return resultWorker != null && resultWorker.isRunning();
     }

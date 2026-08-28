@@ -13,3 +13,6 @@ tickets.md
 RABBITMQ_IMPLEMENTATION_NEW_FUNCTIONALITY.md
 rabbitMQ.txt
 *.xlsx
+
+
+httptest.http

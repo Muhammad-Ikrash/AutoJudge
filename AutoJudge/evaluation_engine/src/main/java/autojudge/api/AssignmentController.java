@@ -22,10 +22,20 @@ import java.util.Map;
 @RequestMapping("/api/assignments")
 public class AssignmentController {
 
+    
+
     private final SubmissionResultRepository repository;
     private final autojudge.database.PlagiarismReportRepository plagiarismRepository;
     private final ExcelGenerator excelGenerator;
     private final EvaluationProducer producer;
+
+
+    // private Path getAssignmentRootPath(){
+    //     return Path.of(System.getProperty("user.dir"))
+    //                                         .toAbsolutePath()
+    //                                         .normalize()
+    //                                         .getParent();
+    // }
 
     public AssignmentController(SubmissionResultRepository repository,
                                 autojudge.database.PlagiarismReportRepository plagiarismRepository,
@@ -37,6 +47,15 @@ public class AssignmentController {
         this.producer = producer;
     }
 
+    @GetMapping
+    public ResponseEntity<List<autojudge.database.SubmissionResultRepository.AssignmentSummary>> getAssignments() {
+        try {
+            return ResponseEntity.ok(repository.findAllAssignmentSummaries());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     @PostMapping("/{id}/grade")
     public ResponseEntity<Map<String, Object>> gradeAssignment(
             @PathVariable("id") String assignmentId,
@@ -45,23 +64,50 @@ public class AssignmentController {
         
         try {
             Path assignmentPath = Path.of(assignmentPathStr).toAbsolutePath().normalize();
-            Path expectedRoot = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
+            // Path expectedRoot = getAssignmentRootPath();
             
-            if (!assignmentPath.startsWith(expectedRoot)) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Invalid assignment path: must be within expected root directory."));
-            }
+            // if (!assignmentPath.startsWith(expectedRoot)) {
+            //     return ResponseEntity.badRequest().body(Map.of("error", "Invalid assignment path: must be within expected root directory."));
+            // }
             if (!Files.exists(assignmentPath) || !Files.isDirectory(assignmentPath)) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Assignment path does not exist or is not a directory: " + assignmentPathStr));
             }
 
             
-            int count = producer.produceEvaluationJobs(assignmentPath, enablePlagiarism);
+            EvaluationProducer.ProduceResult result = producer.produceEvaluationJobs(assignmentPath, enablePlagiarism);
             
             return ResponseEntity.ok(Map.of(
                     "status", "success",
-                    "jobsProduced", count,
+                    "batchId", result.batchId(),
+                    "jobsProduced", result.jobsProduced(),
                     "assignmentId", assignmentPath.getFileName() != null ? assignmentPath.getFileName().toString() : "assignment-1",
                     "message", "Grading jobs queued successfully"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/students/{studentId}/rejudge")
+    public ResponseEntity<Map<String, Object>> rejudgeStudent(
+            @PathVariable("id") String assignmentId,
+            @PathVariable("studentId") String studentId,
+            @RequestParam("path") String assignmentPathStr) {
+        try {
+            Path assignmentPath = Path.of(assignmentPathStr).toAbsolutePath().normalize();
+            if (!Files.exists(assignmentPath) || !Files.isDirectory(assignmentPath)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Assignment path does not exist or is not a directory: " + assignmentPathStr));
+            }
+
+            EvaluationProducer.ProduceResult result = producer.produceSingleStudentJob(assignmentPath, studentId);
+            
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "batchId", result.batchId(),
+                    "jobsProduced", result.jobsProduced(),
+                    "assignmentId", assignmentId,
+                    "studentId", studentId,
+                    "message", "Rejudge queued successfully"
             ));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));

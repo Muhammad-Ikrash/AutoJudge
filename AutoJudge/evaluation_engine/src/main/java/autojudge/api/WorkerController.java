@@ -41,13 +41,13 @@ public class WorkerController {
     }
 
     /** Return the current live EvaluationWorker count. */
-    @GetMapping("/api/workers/status")
-    public ResponseEntity<Map<String, Object>> workerStatus() {
-        return ResponseEntity.ok(Map.of(
-                "totalEvaluationWorkers", workerManager.evaluationWorkerCount(),
-                "resultWorkerRunning", workerManager.isResultWorkerRunning()
-        ));
-    }
+    // @GetMapping("/api/workers/status")
+    // public ResponseEntity<Map<String, Object>> workerStatus() {
+    //     return ResponseEntity.ok(Map.of(
+    //             "totalEvaluationWorkers", workerManager.evaluationWorkerCount(),
+    //             "resultWorkerRunning", workerManager.isResultWorkerRunning()
+    //     ));
+    // }
 
     /** Start the ResultWorker (idempotent — no duplicate spawning). */
     @PostMapping("/api/result-worker/start")
@@ -58,6 +58,13 @@ public class WorkerController {
         }
         return ResponseEntity.ok(Map.of("status", "already_running",
                 "message", "ResultWorker is already running. No duplicate instance was created."));
+    }
+
+    @GetMapping("/api/assignments/{id}/batches/{batchId}/status")
+    public ResponseEntity<autojudge.MessageBroker.ResultWorker.BatchProgress> getBatchStatus(
+            @PathVariable("id") String assignmentId,
+            @PathVariable("batchId") String batchId) {
+        return ResponseEntity.ok(workerManager.getBatchProgress(batchId));
     }
 
     /** Convenience: start ResultWorker + N EvaluationWorkers in one call. */

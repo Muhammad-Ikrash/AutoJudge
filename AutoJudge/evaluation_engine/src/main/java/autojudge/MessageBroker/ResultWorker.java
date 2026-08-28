@@ -36,6 +36,21 @@ public class ResultWorker {
         this.objectMapper = new ObjectMapper();
     }
 
+    public record BatchProgress(String batchId, int expected, int received, boolean complete, Map<String, Integer> verdictCounts) {}
+
+    public BatchProgress getBatchProgress(String batchId) {
+        List<SubmissionResult> results = getCollectedResults(batchId);
+        int expected = results.stream()
+            .mapToInt(SubmissionResult::totalSubmissionsInBatch)
+            .max().orElse(0);
+        Map<String, Integer> verdictCounts = new java.util.HashMap<>();
+        for (SubmissionResult r : results) {
+            verdictCounts.merge(r.verdict().name(), 1, Integer::sum);
+        }
+        boolean complete = expected > 0 && results.size() >= expected;
+        return new BatchProgress(batchId, expected, results.size(), complete, verdictCounts);
+    }
+
     public List<SubmissionResult> getCollectedResults(String batchId) {
         List<SubmissionResult> results = batchResultsMap.get(batchId);
         return results != null ? new ArrayList<>(results) : Collections.emptyList();
@@ -74,7 +89,7 @@ public class ResultWorker {
                     }
                 } catch (Exception e) {
                     log.error("Failed to process SubmissionResult tag={}", deliveryTag, e);
-                    channel.basicNack(deliveryTag, false, false);
+                    channel.basicNack(deliveryTag, false, true); // Requeue = true
                 }
             };
 

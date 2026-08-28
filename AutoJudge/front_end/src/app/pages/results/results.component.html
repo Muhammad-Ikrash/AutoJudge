@@ -1,0 +1,77 @@
+<div class="dashboard-container">
+  <div class="header glass-panel">
+    <div>
+      <a routerLink="/" class="back-link">&larr; Back to Dashboard</a>
+      <h1>Results: {{ assignmentId }}</h1>
+      <p>View grades and rejudge individual submissions.</p>
+    </div>
+    <button class="btn btn-primary" (click)="downloadReport()" [disabled]="downloading || results.length === 0">
+      {{ downloading ? 'Downloading...' : 'Download Report' }}
+    </button>
+  </div>
+
+  @if (error) {
+    <div class="error-banner">{{ error }}</div>
+  }
+
+  <div class="glass-panel table-container">
+    @if (loading) {
+      <div class="empty-state">Loading...</div>
+    } @else if (results.length === 0 && !error) {
+      <div class="empty-state">No results yet, start a grading run.</div>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>Student ID</th>
+            <th>Verdict</th>
+            <th>Score</th>
+            <th>Passed / Total</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of results; track row.studentId) {
+            <tr>
+              <td class="font-bold">{{ row.studentId }}</td>
+              <td>
+                <span class="badge" [ngClass]="getBadgeClass(row.verdict)">{{ row.verdict }}</span>
+              </td>
+              <td>{{ row.score }}</td>
+              <td>{{ row.passedTests }} / {{ row.totalTests }}</td>
+              <td class="actions-cell">
+                <button class="btn btn-secondary btn-sm" (click)="toggleExpand(row)">
+                  {{ row.expanded ? 'Hide Details' : 'View Details' }}
+                </button>
+                <button class="btn btn-primary btn-sm" (click)="rejudge(row)" [disabled]="row.rejudging">
+                  {{ row.rejudging ? 'Rejudging...' : 'Rejudge' }}
+                </button>
+              </td>
+            </tr>
+            @if (row.expanded) {
+              <tr>
+                <td colspan="5" class="details-row">
+                  <div class="details-container">
+                    <h4 style="margin-bottom: 0.5rem;">Test Cases</h4>
+                    @if (!row.testCasesResults || row.testCasesResults.length === 0) {
+                      <p style="color: var(--text-secondary); font-size: 0.875rem;">No test case details available.</p>
+                    } @else {
+                      <ul>
+                        @for (tc of row.testCasesResults; track tc.testCaseName) {
+                          <li>
+                            <strong>{{ tc.testCaseName || tc.test_case_name || 'Test' }}</strong>:
+                            <span [class]="tc.verdict === 'ACCEPTED' ? 'text-success' : 'text-danger'">{{ tc.verdict }}</span>
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>

@@ -74,8 +74,8 @@ public final class Main {
         RabbitMQConnection rabbitMQConnection = new RabbitMQConnection();
         EvaluationProducer producer = new EvaluationProducer(rabbitMQConnection);
 
-        int count = producer.produceEvaluationJobs(assignmentPath, enablePlagiarism);
-        log.info("Successfully produced {} evaluation job(s) for assignment '{}'", count, assignmentPath);
+        EvaluationProducer.ProduceResult result = producer.produceEvaluationJobs(assignmentPath, enablePlagiarism);
+        log.info("Successfully produced {} evaluation job(s) for assignment '{}' with batchId {}", result.jobsProduced(), assignmentPath, result.batchId());
     }
 
     public static void produceJobs(Path assignmentPath) throws Exception {

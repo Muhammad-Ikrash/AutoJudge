@@ -102,4 +102,30 @@ public class SubmissionResultRepository {
         }
         return results;
     }
+
+    public record AssignmentSummary(String assignmentId, int submissionCount, String lastGradedAt) {}
+
+    public java.util.List<AssignmentSummary> findAllAssignmentSummaries() {
+        new DatabaseInitializer().initialize(); // Ensure tables exist before querying
+        String sql = """
+            SELECT assignment_id, COUNT(*) AS cnt, MAX(graded_at) AS last_graded
+            FROM submission_results
+            GROUP BY assignment_id
+            ORDER BY last_graded DESC
+        """;
+        java.util.List<AssignmentSummary> list = new java.util.ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             java.sql.ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                String assignmentId = rs.getString("assignment_id");
+                int count = rs.getInt("cnt");
+                String lastGraded = rs.getTimestamp("last_graded").toInstant().toString();
+                list.add(new AssignmentSummary(assignmentId, count, lastGraded));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to read assignment summaries", e);
+        }
+        return list;
+    }
 }

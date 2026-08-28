@@ -1,0 +1,119 @@
+.dashboard-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  
+  p {
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+  }
+}
+
+.back-link {
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 0.875rem;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  &:hover { text-decoration: underline; }
+}
+
+.threshold-panel {
+  padding: 1.5rem 2rem;
+  margin-bottom: 1.5rem;
+
+  label {
+    display: block;
+    margin-bottom: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+
+    strong {
+      color: white;
+    }
+  }
+
+  .threshold-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--panel-border);
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--primary);
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+    }
+    
+    &:hover {
+      background: rgba(99, 102, 241, 0.2);
+    }
+  }
+
+  .slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+  }
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.font-bold { font-weight: 600; color: white; }
+
+.empty-state {
+  padding: 3rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.error-banner {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--danger);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.similarity-high { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+.similarity-medium { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+.similarity-low { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+
+.similarity-bar-bg {
+  width: 140px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.similarity-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+  
+  &.similarity-high { background: var(--danger); }
+  &.similarity-medium { background: var(--warning); }
+  &.similarity-low { background: var(--success); }
+}
