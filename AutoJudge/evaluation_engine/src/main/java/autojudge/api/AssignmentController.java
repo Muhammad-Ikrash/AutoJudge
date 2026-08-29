@@ -74,7 +74,7 @@ public class AssignmentController {
             }
 
             
-            EvaluationProducer.ProduceResult result = producer.produceEvaluationJobs(assignmentPath, enablePlagiarism);
+            EvaluationProducer.ProduceResult result = producer.produceEvaluationJobs(assignmentId, assignmentPath, enablePlagiarism);
             
             return ResponseEntity.ok(Map.of(
                     "status", "success",

@@ -19,8 +19,10 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Discovers student submissions from an assignment root directory, generates a single batchId per run,
- * constructs EvaluationJob requests, and publishes them to the RabbitMQ evaluation exchange.
+ * Discovers student submissions from an assignment root directory, generates a
+ * single batchId per run,
+ * constructs EvaluationJob requests, and publishes them to the RabbitMQ
+ * evaluation exchange.
  */
 public class EvaluationProducer {
 
@@ -34,22 +36,13 @@ public class EvaluationProducer {
         this.objectMapper = new ObjectMapper();
     }
 
-    public record ProduceResult(String batchId, int jobsProduced) {}
+    public record ProduceResult(String batchId, int jobsProduced) {
+    }
 
-    /**
-     * Discovers submissions under assignmentPath/submissions/ and publishes EvaluationJobs to RabbitMQ.
-     * Optionally runs plagiarism detection if enablePlagiarism is true.
-     *
-     * @param assignmentPath Path to the assignment root folder.
-     * @param enablePlagiarism Toggle flag for optional plagiarism analysis.
-     * @return Number of evaluation jobs published.
-     * @throws IOException If discovering or publishing fails.
-     */
     public ProduceResult produceEvaluationJobs(Path assignmentPath, boolean enablePlagiarism) throws IOException {
-        String assignmentId = assignmentPath.getFileName() != null
-                ? assignmentPath.getFileName().toString()
-                : "assignment-1";
 
+
+        String assignmentId = assignmentPath.getFileName().toString();
         List<Path> submissionPaths = discoverSubmissions(assignmentPath);
         int totalSubmissions = submissionPaths.size();
         String batchId = "batch-" + UUID.randomUUID().toString();
@@ -110,6 +103,78 @@ public class EvaluationProducer {
         return new ProduceResult(batchId, totalSubmissions);
     }
 
+    /**
+     * Discovers submissions under assignmentPath/submissions/ and publishes
+     * EvaluationJobs to RabbitMQ.
+     * Optionally runs plagiarism detection if enablePlagiarism is true.
+     *
+     * @param assignmentPath   Path to the assignment root folder.
+     * @param enablePlagiarism Toggle flag for optional plagiarism analysis.
+     * @return Number of evaluation jobs published.
+     * @throws IOException If discovering or publishing fails.
+     */
+    public ProduceResult produceEvaluationJobs(String assignmentId, Path assignmentPath, boolean enablePlagiarism)
+            throws IOException {
+
+        List<Path> submissionPaths = discoverSubmissions(assignmentPath);
+        int totalSubmissions = submissionPaths.size();
+        String batchId = "batch-" + UUID.randomUUID().toString();
+
+        log.info("Discovered {} submission(s) for assignment at {}. Generated batchId={}",
+                totalSubmissions, assignmentPath, batchId);
+
+        // Auto-detect programming language dynamically from discovered submissions
+        String detectedLanguage = detectLanguageFromSubmissions(submissionPaths);
+        log.info("Auto-detected programming language for assignment '{}': {}", assignmentId, detectedLanguage);
+
+        // Initialize Database Schema
+        new autojudge.database.DatabaseInitializer().initialize();
+
+        // Perform optional plagiarism detection if requested
+        if (enablePlagiarism) {
+            PipelineOrchestrator pipeline = new PipelineOrchestrator();
+            java.util.Optional<autojudge.PlagiarismDetection.model.PlagiarismReport> reportOpt = pipeline
+                    .processPlagiarismStage(assignmentId, assignmentPath, detectedLanguage, true);
+
+            reportOpt.ifPresent(report -> {
+                autojudge.database.PlagiarismReportRepository repo = new autojudge.database.PlagiarismReportRepository();
+                repo.save(report);
+                log.info("Saved plagiarism report to database for assignment '{}'", assignmentId);
+            });
+        }
+
+        try (Channel channel = rabbitMQConnection.createChannel()) {
+            for (Path subPath : submissionPaths) {
+                String studentId = subPath.getFileName().toString();
+                String submissionId = assignmentId + "-" + studentId + "-"
+                        + UUID.randomUUID().toString().substring(0, 8);
+
+                EvaluationJob job = new EvaluationJob(
+                        submissionId,
+                        assignmentId,
+                        studentId,
+                        assignmentPath.toAbsolutePath().toString(),
+                        subPath.toAbsolutePath().toString(),
+                        batchId,
+                        totalSubmissions);
+
+                byte[] messageBytes = objectMapper.writeValueAsBytes(job);
+                channel.basicPublish(
+                        RabbitMQConnection.EVALUATION_EXCHANGE,
+                        RabbitMQConnection.EVALUATION_ROUTING_KEY,
+                        MessageProperties.PERSISTENT_TEXT_PLAIN,
+                        messageBytes);
+                log.info("Published EvaluationJob: studentId={}, submissionId={}, batchId={}",
+                        studentId, submissionId, batchId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to produce evaluation jobs for {}", assignmentPath, e);
+            throw new IOException("Failed to produce evaluation jobs", e);
+        }
+
+        return new ProduceResult(batchId, totalSubmissions);
+    }
+
     public ProduceResult produceEvaluationJobs(Path assignmentPath) throws IOException {
         return produceEvaluationJobs(assignmentPath, false);
     }
@@ -121,13 +186,15 @@ public class EvaluationProducer {
 
         Path studentSubPath = assignmentPath.resolve("submissions").resolve(studentId);
         if (!Files.exists(studentSubPath) || !Files.isDirectory(studentSubPath)) {
-            throw new IOException("Submission directory for student " + studentId + " not found or is not a directory at " + studentSubPath);
+            throw new IOException("Submission directory for student " + studentId
+                    + " not found or is not a directory at " + studentSubPath);
         }
 
         String batchId = "batch-" + java.util.UUID.randomUUID().toString();
-        
+
         try (Channel channel = rabbitMQConnection.createChannel()) {
-            String submissionId = assignmentId + "-" + studentId + "-" + java.util.UUID.randomUUID().toString().substring(0, 8);
+            String submissionId = assignmentId + "-" + studentId + "-"
+                    + java.util.UUID.randomUUID().toString().substring(0, 8);
 
             EvaluationJob job = new EvaluationJob(
                     submissionId,
@@ -136,16 +203,14 @@ public class EvaluationProducer {
                     assignmentPath.toAbsolutePath().toString(),
                     studentSubPath.toAbsolutePath().toString(),
                     batchId,
-                    1
-            );
+                    1);
 
             byte[] messageBytes = objectMapper.writeValueAsBytes(job);
             channel.basicPublish(
                     RabbitMQConnection.EVALUATION_EXCHANGE,
                     RabbitMQConnection.EVALUATION_ROUTING_KEY,
                     com.rabbitmq.client.MessageProperties.PERSISTENT_TEXT_PLAIN,
-                    messageBytes
-            );
+                    messageBytes);
             log.info("Published single EvaluationJob: studentId={}, submissionId={}, batchId={}",
                     studentId, submissionId, batchId);
         } catch (Exception e) {
@@ -182,9 +247,9 @@ public class EvaluationProducer {
         if (Files.exists(submissionsDir) && Files.isDirectory(submissionsDir)) {
             try (var stream = Files.list(submissionsDir)) {
                 stream
-                    .filter(Files::isDirectory)
-                    .sorted(Comparator.comparing(path -> path.getFileName().toString()))
-                    .forEach(submissionFolders::add);
+                        .filter(Files::isDirectory)
+                        .sorted(Comparator.comparing(path -> path.getFileName().toString()))
+                        .forEach(submissionFolders::add);
             }
         }
 
