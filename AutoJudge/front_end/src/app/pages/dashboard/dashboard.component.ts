@@ -27,7 +27,7 @@ export class DashboardComponent implements OnInit {
   gradingForm = {
     assignmentId: '',
     path: '',
-    workers: 4,
+    // workers: 4,
     plagiarism: false,
     isNew: false
   };
@@ -79,7 +79,8 @@ export class DashboardComponent implements OnInit {
   }
 
   openNewAssignmentModal() {
-    this.gradingForm = { assignmentId: '', path: '', workers: 4, plagiarism: false, isNew: true };
+    // this.gradingForm = { assignmentId: '', path: '', workers: 4, plagiarism: false, isNew: true };
+    this.gradingForm = { assignmentId: '', path: '',plagiarism: false, isNew: true };
     this.modalError = '';
     this.showModal = true;
   }
@@ -88,7 +89,7 @@ export class DashboardComponent implements OnInit {
     this.gradingForm = { 
       assignmentId: a.assignmentId, 
       path: a.path || '', 
-      workers: 4, 
+      // workers: 3, 
       plagiarism: a.plagiarismEnabled || false,
       isNew: false
     };
@@ -108,7 +109,7 @@ export class DashboardComponent implements OnInit {
     this.cdr.detectChanges();
 
     try {
-      await this.api.startSystem(this.gradingForm.workers);
+      // await this.api.startSystem(this.gradingForm.workers);
       const res = await this.api.gradeAssignment(
         this.gradingForm.assignmentId,
         this.gradingForm.path,

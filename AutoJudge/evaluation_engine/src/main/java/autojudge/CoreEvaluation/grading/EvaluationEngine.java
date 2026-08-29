@@ -83,7 +83,7 @@ public class EvaluationEngine {
         // Attach batch metadata to SubmissionResult
         return new SubmissionResult(
                 rawResult.submissionId(),
-                rawResult.assignmentId(),
+                job.assignmentId(),
                 rawResult.studentId(),
                 rawResult.score(),
                 rawResult.verdict(),

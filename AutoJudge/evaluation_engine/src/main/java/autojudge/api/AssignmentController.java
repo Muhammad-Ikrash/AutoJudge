@@ -99,7 +99,7 @@ public class AssignmentController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Assignment path does not exist or is not a directory: " + assignmentPathStr));
             }
 
-            EvaluationProducer.ProduceResult result = producer.produceSingleStudentJob(assignmentPath, studentId);
+            EvaluationProducer.ProduceResult result = producer.produceSingleStudentJob(assignmentId,assignmentPath, studentId);
             
             return ResponseEntity.ok(Map.of(
                     "status", "success",

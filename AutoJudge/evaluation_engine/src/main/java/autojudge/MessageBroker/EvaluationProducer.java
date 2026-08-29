@@ -179,10 +179,10 @@ public class EvaluationProducer {
         return produceEvaluationJobs(assignmentPath, false);
     }
 
-    public ProduceResult produceSingleStudentJob(Path assignmentPath, String studentId) throws IOException {
-        String assignmentId = assignmentPath.getFileName() != null
-                ? assignmentPath.getFileName().toString()
-                : "assignment-1";
+    public ProduceResult produceSingleStudentJob(String assignmentId, Path assignmentPath, String studentId) throws IOException {
+        // String assignmentId = assignmentPath.getFileName() != null
+        //         ? assignmentPath.getFileName().toString()
+        //         : "assignment-1";
 
         Path studentSubPath = assignmentPath.resolve("submissions").resolve(studentId);
         if (!Files.exists(studentSubPath) || !Files.isDirectory(studentSubPath)) {
