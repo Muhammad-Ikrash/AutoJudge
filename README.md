@@ -15,7 +15,6 @@ git clone https://github.com/Muhammad-Ikrash/AutoJudge.git
 cd AutoJudge
 
 # 2. Infrastructure: build the sandbox image, start RabbitMQ
-#    (using the docker-compose.yml from earlier — place it at this repo root)
 docker compose build sandbox
 docker compose up -d rabbitmq
 
