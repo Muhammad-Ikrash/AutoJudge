@@ -1,0 +1,26 @@
+services:
+  sandbox:
+    build:
+      context: ./AutoJudge/evaluation_engine/docker
+      dockerfile: Dockerfile
+    image: auto-judge-container:v1.0
+    profiles: ["build-only"]
+
+  rabbitmq-autojudge:
+    image: rabbitmq:4.3.4-management-alpine
+    ports:
+      - "5672:5672"    
+      - "15672:15672"  
+    environment:
+      RABBITMQ_DEFAULT_USER: autojudge
+      RABBITMQ_DEFAULT_PASS: autojudge
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  rabbitmq-data:
