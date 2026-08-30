@@ -57,9 +57,9 @@
                       <p style="color: var(--text-secondary); font-size: 0.875rem;">No test case details available.</p>
                     } @else {
                       <ul>
-                        @for (tc of row.testCasesResults; track tc.testCaseName) {
+                        @for (tc of row.testCasesResults; track tc.testCaseId) {
                           <li>
-                            <strong>{{ tc.testCaseName || tc.test_case_name || 'Test' }}</strong>:
+                            <strong>{{ tc.testCaseId }}</strong>:
                             <span [class]="tc.verdict === 'ACCEPTED' ? 'text-success' : 'text-danger'">{{ tc.verdict }}</span>
                           </li>
                         }

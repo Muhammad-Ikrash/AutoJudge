@@ -188,6 +188,7 @@ public class AssignmentController {
         try {
             plagiarismRepository.deleteById(assignmentId);
             repository.deleteById(assignmentId);
+            System.out.println("Assignment deleted successfully " + assignmentId);
             return ResponseEntity.ok(Map.of(
                     "status", "success",
                     "message", "Assignment deleted successfully"

@@ -8,6 +8,11 @@ export interface AssignmentSummary {
   plagiarismEnabled?: boolean;
 }
 
+export interface TestCaseResult {
+  testCaseId: string;
+   verdict: string;
+}
+
 export interface SubmissionResult {
   submissionId: string;
   assignmentId: string;
@@ -17,7 +22,7 @@ export interface SubmissionResult {
   passedTests: number;
   totalTests: number;
   batchId: string;
-  testCasesResults?: any[];
+  testCasesResults?: TestCaseResult[];
 }
 
 export interface SimilarityPair {

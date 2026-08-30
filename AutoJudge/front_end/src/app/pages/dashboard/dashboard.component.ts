@@ -232,9 +232,7 @@ export class DashboardComponent implements OnInit {
       this.deleteFromCache(assignmentId);
     }
     else {
-      if (confirm('This assignment has submissions. Are you sure you want to delete it?')) {
-        this.deleteFromCache(assignmentId);
-      }
+      this.deleteAssignmentData(assignmentId);
     }
   }
 

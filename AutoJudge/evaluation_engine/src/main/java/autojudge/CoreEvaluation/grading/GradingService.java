@@ -101,7 +101,7 @@ public final class GradingService {
 
             testcaseMapping.add(new testCaseResult(testCase.id(), verdict));
 
-            log.info("[TestCase: {}] Verdict: {} | Time: {} ms", testCase.id(), verdict, executionResult.executionTime());
+            // log.info("[TestCase: {}] Verdict: {} | Time: {} ms", testCase.id(), verdict, executionResult.executionTime());
 
         }
 
