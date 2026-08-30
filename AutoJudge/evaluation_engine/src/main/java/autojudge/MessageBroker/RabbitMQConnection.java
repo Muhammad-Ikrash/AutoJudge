@@ -32,8 +32,8 @@ public class RabbitMQConnection implements AutoCloseable {
         this(
             getEnv("RABBITMQ_HOST", "localhost"),
             Integer.parseInt(getEnv("RABBITMQ_PORT", "5672")),
-            getEnv("RABBITMQ_USERNAME", "guest"),
-            getEnv("RABBITMQ_PASSWORD", "guest"),
+            getEnv("RABBITMQ_USERNAME", "autojudge"),
+            getEnv("RABBITMQ_PASSWORD", "autojudge"),
             getEnv("RABBITMQ_VHOST", "/")
         );
     }

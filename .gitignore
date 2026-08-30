@@ -16,4 +16,7 @@ rabbitMQ.txt
 
 
 httptest.http
-*.db
+AutoJudge/evaluation_engine/data/
+
+autojudge.mv.db
+autojudge.trace.db

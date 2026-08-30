@@ -16,15 +16,14 @@ cd AutoJudge
 
 # 2. Infrastructure: build the sandbox image, start RabbitMQ
 docker compose build sandbox
-docker compose up -d rabbitmq
+docker compose up -d rabbitmq-autojudge
 
 # 3. Backend: build the jar
 cd AutoJudge/evaluation_engine
 mvn clean package
 
-# 4. Backend: run the API (creds must match the compose file's RABBITMQ_DEFAULT_USER/PASS)
-RABBITMQ_USERNAME=autojudge RABBITMQ_PASSWORD=autojudge \
-  java -jar target/evaluation_engine-1.0-SNAPSHOT.jar api
+# 4. Backend: run the API
+java -jar target/evaluation_engine-1.0-SNAPSHOT.jar api
 #   ^ leave this running in its own terminal — API comes up on :8080
 
 # 5. Frontend: install deps and serve (new terminal, back at repo root)
