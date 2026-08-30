@@ -5,7 +5,7 @@ AutoJudge is a custom assignment grading system inspired by online judges like D
 Instead of manually downloading submissions and checking outputs, AutoJudge aims to handle the complete workflow automatically.
 
 ---
-### Setup
+## Setup
 
 Run these commands in Order
 
@@ -33,6 +33,16 @@ npm install
 ng serve
 #   ^ leave this running too — opens on :4200
 ```
+
+---
+
+## Notice
+
+For the classroom_scraper to work, you need to set up the Google OAuth credentials. 
+create a project on google cloud console
+enable the classroom api and drive api
+download the credentials.json file
+place it in the classroom_scraper folder
 
 ---
 
