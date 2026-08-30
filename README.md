@@ -29,9 +29,7 @@ cd AutoJudge/evaluation_engine
 mvn clean package
 
 # 4. Backend: run the API
-#    Credentials must match docker-compose.yaml's RABBITMQ_DEFAULT_USER/PASS
-RABBITMQ_USERNAME=autojudge RABBITMQ_PASSWORD=autojudge \
-  java -jar target/evaluation_engine-1.0-SNAPSHOT.jar api
+java -jar target/evaluation_engine-1.0-SNAPSHOT.jar api
 #   ^ leave this running in its own terminal — API comes up on :8080
 
 # 5. Frontend: install deps and serve (new terminal, back at repo root)
