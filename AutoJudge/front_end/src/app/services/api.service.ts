@@ -88,6 +88,12 @@ export class ApiService {
     return this.fetchApi(`/api/assignments/${assignmentId}/plagiarism/report?threshold=${threshold}`);
   }
 
+  async deleteAssignmentData(assignmentId: string): Promise<any> {
+    return this.fetchApi(`/api/assignments/${assignmentId}`, {
+      method: 'DELETE'
+    });
+  }
+
   async getBatchStatus(assignmentId: string, batchId: string): Promise<BatchProgress> {
     return this.fetchApi(`/api/assignments/${assignmentId}/batches/${batchId}/status`);
   }

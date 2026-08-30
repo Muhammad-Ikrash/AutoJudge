@@ -182,4 +182,18 @@ public class AssignmentController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> deleteAssignment(@PathVariable("id") String assignmentId) {
+        try {
+            plagiarismRepository.deleteById(assignmentId);
+            repository.deleteById(assignmentId);
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "message", "Assignment deleted successfully"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

@@ -4,6 +4,9 @@
       <h1>AutoJudge Dashboard</h1>
       <p>Manage and monitor all your evaluation assignments.</p>
     </div>
+    <button class="btn btn-primary" (click)="openWorkerModal()">
+      Manage Workers
+    </button>
     <button class="btn btn-primary" (click)="openNewAssignmentModal()">
       + New Assignment
     </button>
@@ -52,12 +55,13 @@
                   View Results
                 </a>
               }
-              @if (a.plagiarismEnabled) {
+              <!-- @if (a.plagiarismEnabled) { -->
                 <a [routerLink]="['/assignments', a.assignmentId, 'plagiarism']" class="btn btn-secondary btn-sm">
                   Plagiarism
                 </a>
-              }
-              @if (a.submissionCount === 0 && !a.polling) {
+              <!-- } -->
+              <!-- @if (a.submissionCount === 0 && !a.polling) { -->
+               @if (!a.polling) {
                 <button class="btn btn-danger btn-sm" (click)="deleteFromCache(a.assignmentId)" title="Remove from list">
                   Delete
                 </button>
@@ -69,6 +73,23 @@
     </table>
   </div>
 </div>
+
+
+@if (showWorkerModal) {
+  <div class="modal-backdrop">
+    <div class="modal glass-panel">
+      <h2>Manage Workers</h2>
+      <div class="form-group">
+        <label>Number of Workers</label>
+        <input type="number" class="input-field" [(ngModel)]="workers" min="1" max="16">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" (click)="closeWorkerModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="submitWorkerCount()">Save</button>
+      </div>
+    </div>
+  </div>
+}
 
 <!-- Grading Modal -->
 @if (showModal) {

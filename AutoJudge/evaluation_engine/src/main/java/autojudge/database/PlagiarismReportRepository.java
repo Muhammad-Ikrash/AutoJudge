@@ -38,6 +38,17 @@ public class PlagiarismReportRepository {
         }
     }
 
+    public void deleteById(String assignmentId) {
+        String sql = "DELETE FROM plagiarism_reports WHERE assignment_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, assignmentId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to delete assignment", e);
+        }
+    }
+
     public PlagiarismReport findByAssignmentIdAndThreshold(String assignmentId, double threshold) {
         String sql = "SELECT * FROM plagiarism_reports WHERE assignment_id = ? AND similarity >= ? ORDER BY similarity DESC";
         java.util.List<SimilarityPair> pairs = new java.util.ArrayList<>();

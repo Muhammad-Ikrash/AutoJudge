@@ -20,6 +20,7 @@ public class SubmissionResultRepository {
             VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
         """;
 
+
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
             
@@ -127,5 +128,22 @@ public class SubmissionResultRepository {
             throw new RuntimeException("Failed to read assignment summaries", e);
         }
         return list;
+    }
+
+    public void deleteById(String assignmentId) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "DELETE FROM submission_results WHERE assignment_id = ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, assignmentId);
+                pstmt.executeUpdate();
+            }
+            String sql2 = "DELETE FROM testcase_results WHERE assignment_id = ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(sql2)) {
+                pstmt.setString(1, assignmentId);
+                pstmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to delete assignment", e);
+        }
     }
 }

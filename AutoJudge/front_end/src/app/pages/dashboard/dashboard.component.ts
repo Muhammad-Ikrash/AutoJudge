@@ -20,10 +20,14 @@ interface AssignmentRow extends AssignmentSummary {
 })
 export class DashboardComponent implements OnInit {
   assignments: AssignmentRow[] = [];
-  
+
   showModal = false;
+  showWorkerModal = false;
+  workers = 3;
   modalSubmitting = false;
   modalError = '';
+  WorkerModalError = '';
+
   gradingForm = {
     assignmentId: '',
     path: '',
@@ -34,7 +38,7 @@ export class DashboardComponent implements OnInit {
 
   private pollIntervals: Record<string, any> = {};
 
-  constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
+  constructor(private api: ApiService, private cdr: ChangeDetectorRef) { }
 
   async ngOnInit() {
     await this.loadAssignments();
@@ -46,7 +50,7 @@ export class DashboardComponent implements OnInit {
       const serverAssignments = await this.api.getAssignments();
       const localCache = this.api.getLocalAssignments();
       const mergedMap = new Map<string, AssignmentRow>();
-      
+
       for (const a of serverAssignments) {
         const local = localCache[a.assignmentId];
         mergedMap.set(a.assignmentId, {
@@ -56,7 +60,7 @@ export class DashboardComponent implements OnInit {
           status: 'Done'
         });
       }
-      
+
       for (const [id, local] of Object.entries(localCache)) {
         if (!mergedMap.has(id)) {
           mergedMap.set(id, {
@@ -69,7 +73,7 @@ export class DashboardComponent implements OnInit {
           });
         }
       }
-      
+
       this.assignments = Array.from(mergedMap.values());
     } catch (e) {
       console.error('Failed to load assignments', e);
@@ -80,15 +84,38 @@ export class DashboardComponent implements OnInit {
 
   openNewAssignmentModal() {
     // this.gradingForm = { assignmentId: '', path: '', workers: 4, plagiarism: false, isNew: true };
-    this.gradingForm = { assignmentId: '', path: '',plagiarism: false, isNew: true };
+    this.gradingForm = { assignmentId: '', path: '', plagiarism: false, isNew: true };
     this.modalError = '';
     this.showModal = true;
   }
 
+  openWorkerModal() {
+    this.showWorkerModal = true;
+    this.workers = 3;
+    this.WorkerModalError = '';
+  }
+
+  closeWorkerModal() {
+    this.showWorkerModal = false;
+  }
+
+  async submitWorkerCount() {
+    this.showWorkerModal = false;
+    try {
+      const res = await this.api.startSystem(this.workers);
+      console.log(res);
+    }
+    catch (e: any) {
+      console.error('submitWorkerCount error:', e);
+      this.WorkerModalError = e.message || 'Unknown error';
+    }
+
+  }
+
   openGradeModal(a: AssignmentRow) {
-    this.gradingForm = { 
-      assignmentId: a.assignmentId, 
-      path: a.path || '', 
+    this.gradingForm = {
+      assignmentId: a.assignmentId,
+      path: a.path || '',
       // workers: 3, 
       plagiarism: a.plagiarismEnabled || false,
       isNew: false
@@ -194,11 +221,31 @@ export class DashboardComponent implements OnInit {
     }, 2000);
   }
 
+
+  deleteAssignmentData(assignmentId: string) {
+    this.api.deleteAssignmentData(assignmentId);
+  }
+
+
+  deleteWrapper(assignmentId: string) {
+    if (this.assignments.find(a => a.assignmentId === assignmentId)?.submissionCount === 0) {
+      this.deleteFromCache(assignmentId);
+    }
+    else {
+      if (confirm('This assignment has submissions. Are you sure you want to delete it?')) {
+        this.deleteFromCache(assignmentId);
+      }
+    }
+  }
+
   deleteFromCache(assignmentId: string) {
+
+    this.api.deleteAssignmentData(assignmentId);
     const cache = this.api.getLocalAssignments();
     delete cache[assignmentId];
     localStorage.setItem('autojudge:known-assignments', JSON.stringify(cache));
     this.assignments = this.assignments.filter(a => a.assignmentId !== assignmentId);
     this.cdr.detectChanges();
+
   }
 }
