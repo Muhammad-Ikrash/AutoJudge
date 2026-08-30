@@ -1,4 +1,5 @@
-*.json
+credentials.json
+client_secret*.json
 CourseFiles
 
 git 
