@@ -80,7 +80,7 @@ public class AssignmentController {
                     "status", "success",
                     "batchId", result.batchId(),
                     "jobsProduced", result.jobsProduced(),
-                    "assignmentId", assignmentPath.getFileName() != null ? assignmentPath.getFileName().toString() : "assignment-1",
+                    "assignmentId", assignmentId,
                     "message", "Grading jobs queued successfully"
             ));
         } catch (Exception e) {

@@ -41,13 +41,13 @@ public class WorkerController {
     }
 
     /** Return the current live EvaluationWorker count. */
-    // @GetMapping("/api/workers/status")
-    // public ResponseEntity<Map<String, Object>> workerStatus() {
-    //     return ResponseEntity.ok(Map.of(
-    //             "totalEvaluationWorkers", workerManager.evaluationWorkerCount(),
-    //             "resultWorkerRunning", workerManager.isResultWorkerRunning()
-    //     ));
-    // }
+    @GetMapping("/api/workers/status")
+    public ResponseEntity<Map<String, Object>> workerStatus() {
+        return ResponseEntity.ok(Map.of(
+                "totalEvaluationWorkers", workerManager.evaluationWorkerCount(),
+                "resultWorkerRunning", workerManager.isResultWorkerRunning()
+        ));
+    }
 
     /** Start the ResultWorker (idempotent — no duplicate spawning). */
     @PostMapping("/api/result-worker/start")

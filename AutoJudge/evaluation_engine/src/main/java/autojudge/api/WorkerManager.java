@@ -44,8 +44,8 @@ public class WorkerManager {
      * Starts {@code count} additional EvaluationWorker instances, each on its own daemon thread.
      */
     public int startEvaluationWorkers(int count) {
-        int started = 0;
-        for (int i = 0; i < count; i++) {
+        int started = runningEvaluationWorkers.size();
+        for (int i = started; i < count; i++) {
             try {
                 EvaluationWorker worker = new EvaluationWorker(
                         rabbitMQConnection,
@@ -95,7 +95,7 @@ public class WorkerManager {
     /** Returns the current count of live EvaluationWorker instances. */
     public int evaluationWorkerCount() {
         // Prune any workers whose channels have been closed externally
-        runningEvaluationWorkers.removeIf(w -> !w.isRunning());
+        // runningEvaluationWorkers.removeIf(w -> !w.isRunning());
         return runningEvaluationWorkers.size();
     }
 
@@ -156,11 +156,17 @@ public class WorkerManager {
      */
     public Map<String, Object> startSystem(int workerCount) {
         boolean resultWorkerStarted = startResultWorker();
-        int evaluationWorkersStarted = startEvaluationWorkers(workerCount);
+        int countCurrentWorkers = evaluationWorkerCount();
+        if (countCurrentWorkers > workerCount) {
+            stopEvaluationWorkers(countCurrentWorkers - workerCount);
+        }
+        else {
+            startEvaluationWorkers(workerCount);
+        }
+        
         return Map.of(
                 "resultWorkerStarted", resultWorkerStarted,
-                "evaluationWorkersStarted", evaluationWorkersStarted,
-                "totalEvaluationWorkers", evaluationWorkerCount()
+                "totalEvaluationWorkers", runningEvaluationWorkers.size()
         );
     }
 }

@@ -146,3 +146,17 @@
   gap: 1rem;
   margin-top: 2rem;
 }
+
+.workers-count-text {
+  color: whitesmoke;
+}
+
+.workers-count {
+  color: var(--text-secondary);
+  padding-top: 10px;
+
+  font-size: 12px;
+  position: absolute;
+  text-align: center;
+  
+}

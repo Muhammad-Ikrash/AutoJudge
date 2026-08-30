@@ -1,15 +1,29 @@
 <div class="dashboard-container">
   <div class="header glass-panel">
     <div>
-      <h1>AutoJudge Dashboard</h1>
-      <p>Manage and monitor all your evaluation assignments.</p>
+      <h1>Tindd Evaluation System</h1>
+      <p>AutoJudge (T.E.S) Dashboard</p>
     </div>
-    <button class="btn btn-primary" (click)="openWorkerModal()">
-      Manage Workers
-    </button>
+    <!-- <div> -->
+      <button class="btn btn-primary" (click)="openWorkerModal()">
+        <!-- Manage Workers -->
+        Running Workers: <span class="workers-count-text">{{ RunningWorkersCount() }} </span>
+      </button>
+
+      <!-- @if (RunningWorkersCount() > 0) { -->
+
+      <!-- <div class="workers-count" >
+        Running Workers: <span class="workers-count-text">{{ RunningWorkersCount() }} </span>
+      </div> -->
+      <!-- } -->
+    <!-- </div> -->
+
     <button class="btn btn-primary" (click)="openNewAssignmentModal()">
       + New Assignment
     </button>
+
+    <!-- Show Running Workers Count -->
+
   </div>
 
   <div class="glass-panel table-container">
@@ -25,49 +39,49 @@
       </thead>
       <tbody>
         @if (assignments.length === 0) {
-          <tr>
-            <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
-              No assignments yet. Click "+ New Assignment" to add one.
-            </td>
-          </tr>
+        <tr>
+          <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+            No assignments yet. Click "+ New Assignment" to add one.
+          </td>
+        </tr>
         }
         @for (a of assignments; track a.assignmentId) {
-          <tr>
-            <td class="font-bold">{{ a.assignmentId }}</td>
-            <td>{{ a.lastGradedAt === '—' ? '—' : (a.lastGradedAt | date:'medium') }}</td>
-            <td>{{ a.submissionCount }}</td>
-            <td>
-              <span class="badge" [ngClass]="{
+        <tr>
+          <td class="font-bold">{{ a.assignmentId }}</td>
+          <td>{{ a.lastGradedAt === '—' ? '—' : (a.lastGradedAt | date:'medium') }}</td>
+          <td>{{ a.submissionCount }}</td>
+          <td>
+            <span class="badge" [ngClass]="{
                 'bg-warning': a.status === 'Grading…',
                 'bg-success': a.status === 'Done',
                 'bg-secondary': a.status === 'Not started'
               }">{{ a.status }}</span>
-              @if (a.polling) {
-                <span class="progress-text ml-2">{{ a.progress }}</span>
-              }
-            </td>
-            <td class="actions-cell">
-              <button class="btn btn-primary btn-sm" (click)="openGradeModal(a)" [disabled]="a.polling">
-                Start Grading
-              </button>
-              @if (a.submissionCount > 0) {
-                <a [routerLink]="['/assignments', a.assignmentId, 'results']" class="btn btn-secondary btn-sm">
-                  View Results
-                </a>
-              }
-              <!-- @if (a.plagiarismEnabled) { -->
-                <a [routerLink]="['/assignments', a.assignmentId, 'plagiarism']" class="btn btn-secondary btn-sm">
-                  Plagiarism
-                </a>
-              <!-- } -->
-              <!-- @if (a.submissionCount === 0 && !a.polling) { -->
-               @if (!a.polling) {
-                <button class="btn btn-danger btn-sm" (click)="deleteFromCache(a.assignmentId)" title="Remove from list">
-                  Delete
-                </button>
-              }
-            </td>
-          </tr>
+            @if (a.polling) {
+            <span class="progress-text ml-2">{{ a.progress }}</span>
+            }
+          </td>
+          <td class="actions-cell">
+            <button class="btn btn-primary btn-sm" (click)="openGradeModal(a)" [disabled]="a.polling">
+              Start Grading
+            </button>
+            @if (a.submissionCount > 0) {
+            <a [routerLink]="['/assignments', a.assignmentId, 'results']" class="btn btn-secondary btn-sm">
+              View Results
+            </a>
+            }
+            <!-- @if (a.plagiarismEnabled) { -->
+            <a [routerLink]="['/assignments', a.assignmentId, 'plagiarism']" class="btn btn-secondary btn-sm">
+              Plagiarism
+            </a>
+            <!-- } -->
+            <!-- @if (a.submissionCount === 0 && !a.polling) { -->
+            @if (!a.polling) {
+            <button class="btn btn-danger btn-sm" (click)="deleteFromCache(a.assignmentId)" title="Remove from list">
+              Delete
+            </button>
+            }
+          </td>
+        </tr>
         }
       </tbody>
     </table>
@@ -76,83 +90,75 @@
 
 
 @if (showWorkerModal) {
-  <div class="modal-backdrop">
-    <div class="modal glass-panel">
-      <h2>Manage Workers</h2>
-      <div class="form-group">
-        <label>Number of Workers</label>
-        <input type="number" class="input-field" [(ngModel)]="workers" min="1" max="16">
-      </div>
-      <div class="modal-actions">
-        <button class="btn btn-secondary" (click)="closeWorkerModal()">Cancel</button>
-        <button class="btn btn-primary" (click)="submitWorkerCount()">Save</button>
-      </div>
+<div class="modal-backdrop">
+  <div class="modal glass-panel">
+    <h2>Manage Workers</h2>
+    <div class="form-group">
+      <label>Number of Workers</label>
+      <input type="number" class="input-field" [(ngModel)]="workers" min="1" max="16">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" (click)="closeWorkerModal()">Cancel</button>
+      <button class="btn btn-primary" (click)="submitWorkerCount()">Save</button>
     </div>
   </div>
+</div>
 }
 
 <!-- Grading Modal -->
 @if (showModal) {
-  <div class="modal-backdrop">
-    <div class="modal glass-panel">
-      <h2>{{ gradingForm.isNew ? 'New Assignment' : 'Start Grading' }}</h2>
+<div class="modal-backdrop">
+  <div class="modal glass-panel">
+    <h2>{{ gradingForm.isNew ? 'New Assignment' : 'Start Grading' }}</h2>
 
-      @if (modalError) {
-        <div class="error-banner">{{ modalError }}</div>
-      }
+    @if (modalError) {
+    <div class="error-banner">{{ modalError }}</div>
+    }
 
-      <div class="form-group">
-        <label>Assignment ID</label>
-        <input type="text" class="input-field" [(ngModel)]="gradingForm.assignmentId" [disabled]="!gradingForm.isNew">
+    <div class="form-group">
+      <label>Assignment ID</label>
+      <input type="text" class="input-field" [(ngModel)]="gradingForm.assignmentId" [disabled]="!gradingForm.isNew">
+    </div>
+
+    <div class="form-group">
+      <label>Assignment Folder Path</label>
+      <div class="folder-picker-row">
+        <input type="text" class="input-field" [(ngModel)]="gradingForm.path"
+          placeholder="/home/user/projects/assignment-1" style="flex: 1;" />
+        <label class="btn btn-secondary" style="cursor: pointer; white-space: nowrap;">
+          📁 Browse
+          <input type="file" style="display:none;" webkitdirectory (change)="onFolderPick($event)" />
+        </label>
       </div>
+      <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.4rem;">
+        Browse selects the folder name — type the full absolute path (e.g.
+        <code>/home/user/projects/assignment-1</code>)
+      </p>
+    </div>
 
-      <div class="form-group">
-        <label>Assignment Folder Path</label>
-        <div class="folder-picker-row">
-          <input
-            type="text"
-            class="input-field"
-            [(ngModel)]="gradingForm.path"
-            placeholder="/home/user/projects/assignment-1"
-            style="flex: 1;"
-          />
-          <label class="btn btn-secondary" style="cursor: pointer; white-space: nowrap;">
-            📁 Browse
-            <input
-              type="file"
-              style="display:none;"
-              webkitdirectory
-              (change)="onFolderPick($event)"
-            />
-          </label>
-        </div>
-        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.4rem;">
-          Browse selects the folder name — type the full absolute path (e.g. <code>/home/user/projects/assignment-1</code>)
-        </p>
-      </div>
-
-      <div class="form-group row">
-        <!-- <div class="col"> -->
-          <!-- <label>Workers</label>
+    <div class="form-group row">
+      <!-- <div class="col"> -->
+      <!-- <label>Workers</label>
           <input type="number" class="input-field" [(ngModel)]="gradingForm.workers" min="1" max="16"> -->
-        <!-- </div> -->
-        <div class="col checkbox-col">
-          <label class="checkbox-label">
-            <input type="checkbox" [(ngModel)]="gradingForm.plagiarism">
-            Enable Plagiarism Check
-          </label>
-        </div>
-      </div>
-
-      <div class="modal-actions">
-        <button class="btn btn-secondary" (click)="closeModal()" [disabled]="modalSubmitting">Cancel</button>
-        @if (gradingForm.isNew) {
-          <button class="btn btn-secondary" (click)="saveNewAssignment()">Save Only</button>
-        }
-        <button class="btn btn-primary" (click)="submitGrading()" [disabled]="modalSubmitting || !gradingForm.assignmentId || !gradingForm.path">
-          {{ modalSubmitting ? 'Starting...' : 'Start Grading' }}
-        </button>
+      <!-- </div> -->
+      <div class="col checkbox-col">
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="gradingForm.plagiarism">
+          Enable Plagiarism Check
+        </label>
       </div>
     </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" (click)="closeModal()" [disabled]="modalSubmitting">Cancel</button>
+      @if (gradingForm.isNew) {
+      <button class="btn btn-secondary" (click)="saveNewAssignment()">Save Only</button>
+      }
+      <button class="btn btn-primary" (click)="submitGrading()"
+        [disabled]="modalSubmitting || !gradingForm.assignmentId || !gradingForm.path">
+        {{ modalSubmitting ? 'Starting...' : 'Start Grading' }}
+      </button>
+    </div>
   </div>
+</div>
 }

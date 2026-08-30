@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -20,7 +20,8 @@ interface AssignmentRow extends AssignmentSummary {
 })
 export class DashboardComponent implements OnInit {
   assignments: AssignmentRow[] = [];
-
+  // resultWorkerActive: boolean = false;
+  RunningWorkersCount = signal<number>(0);
   showModal = false;
   showWorkerModal = false;
   workers = 3;
@@ -42,6 +43,8 @@ export class DashboardComponent implements OnInit {
 
   async ngOnInit() {
     await this.loadAssignments();
+    const res = await this.api.getWorkerStatus();
+    this.RunningWorkersCount.set(res.totalEvaluationWorkers)
   }
 
   async loadAssignments() {
@@ -104,6 +107,7 @@ export class DashboardComponent implements OnInit {
     try {
       const res = await this.api.startSystem(this.workers);
       console.log(res);
+      this.RunningWorkersCount.set(res.totalEvaluationWorkers); 
     }
     catch (e: any) {
       console.error('submitWorkerCount error:', e);
